@@ -1,4 +1,5 @@
-compiletoflash
+\ compiletoflash
+compiletoram
 
 $40010800 constant GPIOA
 $40010C00 constant GPIOB
@@ -286,4 +287,4 @@ NVIC $438 + constant NVIC_IPR14
   exti.set
 ;
 
-compiletoram
+\ compiletoram
