@@ -22,30 +22,48 @@
 \    pins to alternate functions.
 \  MOSI = Input, MISO = Output in slave mode.
 
-forgetram
+\ forgetram
+
+compiletoflash
 
 \ USES 00-mmap.fs
 
-: spi1-pin-conf# ( pin -- )
-  >r
-  GPIOA r@ %10 gpio-mode!   \ Alternate Function
-  GPIOA r@ %11 gpio-ospeed! \ HUIGH SPEED
-  GPIOA r@ %00 gpio-pupd!  \ NO-PULL
-  GPIOA r@ 5   gpio-af!     \ 5 = SPI Altern.funct.
-  r> drop
-;
-
-: g. GPIOA GPIO. ;
-
-: spi1-gpio-setup
-  4 spi1-pin-conf#
-  5 spi1-pin-conf#
-  6 spi1-pin-conf#
-  7 spi1-pin-conf#
-  $0 $1 rcc-en!        \ Enable CLK Enable on port 0 = A
-;
-
 \ RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE) ?
+
+
+: rcc-spi1-enable! ( 1/0 -- ) \ Enable communications
+  RCC RCC.APB2ENR swap
+  1 12 lshift swap
+  if
+    bis!
+  else
+    bic!
+  then
+;
+
+: spi-s? ( SPIa -- register ) \ Get status register
+  SPI.SR @
+;
+
+: spi-txe? ( SPIa -- T/F ) \ Is transmit buffer empty ?
+  spi-s? 1 1 lshift and
+;
+
+: spi-rxne? ( SPIa -- T/F ) \ Is receive buffer NOT empty ?
+  spi-s? %1 and
+;
+
+: spi-busy? ( SPIa -- busy ) \ Get busy flag
+  spi-s? 1 7 lshift and
+;
+
+: spi@ ( SPIa -- SPI-DR ) \ Get [received] data from data register (RX buffer)
+  SPI.DR @
+;
+
+: spi! ( data SPIa -- ) \ Set [transmit] data register (TX buffer)
+  SPI.DR !
+;
 
 : spi1-en! ( %1/0 -- )
   RCC RCC.APB2ENR
@@ -58,35 +76,12 @@ forgetram
   then
 ;
 
-
-: spi1-setup-ad ( -- )
-  spi1-gpio-setup    \ Setup functions on pins first, enable CLK
-  1 spi1-en!
-  SPI1
-  dup SPI.CR1
-    dup 1 6 lshift swap bic!   \ ~SPE, SPI Enable
-    dup 1 11 lshift swap bis!  \ 16 bit data frame
-
-    \ dup 1 lshift 9 bic! \ Software management disabled (if ~TI)
-    \ dup 1 lshift 7 bic! \ 0 - MSBFIRST, 1 - LSBFIRST (if ~TI)
-    \ dup 1 lshift 1 bic! \ CPOL (if ~TI)
-    \ dup 1 lshift 0 bis! \ CPHA = 0, L=1  ---\_/-\_/-.....---- SCK \  (if ~TI)
-                          \ CPHA = 1, L=0  _/-\_/-\_/-.....---- SCK \
-
-    dup 1 2 lshift swap bic!   \ MSTR, SLAVE mode SPI
-    drop
-  dup SPI.CR2
-    dup 1 4 lshift swap bis!   \ FRF (Frame format) TI mode (seems OK for AD)
-    drop
-  drop
-;
-
 : spi-wait ( SPIa -- )
   \ until RXNE == 1 &
   \ until TXE == 1 &
   \ until BSY == 0 &
   begin
-    dup spi-bsy? not
+    dup spi-busy? not
   until
   SPI.SR
   begin
@@ -96,21 +91,19 @@ forgetram
 ;
 
 : spi-enable! ( SPIa %1/0 -- )
+  swap >r
   \ DMA?
   if
-    dup SPI.CR2 %111 5 lshift bis! \ enable interrupts
-    SPI.CR1 1 6 lshift bis!        \ enable
+    %111 5 lshift r@ SPI.CR2 bis! \ enable interrupts
+    1 6 lshift    r@ SPI.CR1 bis! \ enable
     \ enable peripheral clock
   else
     spi-wait
-    dup SPI.CR2 %111 5 lshift bic! \ disable interrupts
-    SPI.CR1 1 6 lshift bic!        \ disable
+    1 6 lshift    r@ SPI.CR1 bic! \ disable
+    %111 5 lshift r@ SPI.CR2 bic! \ disable interrupts
     \ disable peripheral clock
   then
+  rdrop
 ;
 
-
-: init-ad
-  spi1-setup-ad
-  SPI1 SPI.
-;
+compiletoram

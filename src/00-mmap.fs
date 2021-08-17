@@ -72,11 +72,11 @@ $40021C00 constant GPIOH ( General-purpose I/Os )
   %1 swap lshift
 ;
 
-: +pin ( mask pin -- mask )
+: pin+ ( mask pin -- mask )
   pin or
 ;
 
-: -pin ( mask pin -- mask )
+: pin- ( mask pin -- mask )
   pin not and
 ;
 
@@ -198,14 +198,17 @@ $40023800 constant RCC ( Reset and clock control )
 
 : RCC.AHB1LPENR ( RCCa -- RCC_AHB1LPENRa) $50 + ; ( AHB1 peripheral clock enable in low power mode register )
 : RCC.AHB1ENR ( RCCa -- RCC_AHB1ENRa) $30 + ; ( AHB1 peripheral clock enable register )
-: RCC.APB2ENR ( RCCa -- RCC_AHB2ENRa) $44 + ; ( AHB2 peripheral clock enable register )
+: RCC.APB1ENR ( RCCa -- RCC_AHB1ENRa) $40 + ; ( APB1 peripheral clock enable register )
+: RCC.APB2ENR ( RCCa -- RCC_AHB2ENRa) $44 + ; ( APB2 peripheral clock enable register )
 
 : RCC.AHB1LPENR. ." RCC.AHB1LPENR (read-write) $" RCC RCC.AHB1LPENR @1b. ;
 : RCC.AHB1ENR. ." RCC.AHB1ENR (read-write) $" RCC RCC.AHB1ENR @1b. ;
+: RCC.APB1ENR. ." RCC.APB1ENR (read-write) $" RCC RCC.APB1ENR @1b. ;
 : RCC.APB2ENR. ." RCC.APB2ENR (read-write) $" RCC RCC.APB2ENR @1b. ;
 : RCC.
-  RCC.AHB1LPENR.
+  \ RCC.AHB1LPENR.
   RCC.AHB1ENR.
+  RCC.APB1ENR.
   RCC.APB2ENR.
 ;
 
@@ -280,41 +283,6 @@ $40015000 constant SPI5 ( Serial peripheral interface )
   dup SPI.I2SCFGR.
   dup SPI.I2SPR.
   drop
-;
-
-: rcc-spi1-enable! ( 1/0 -- )
-  RCC RCC.APB2ENR swap
-  1 12 lshift swap
-  if
-    bis!
-  else
-    bic!
-  then
-;
-
-: spi-s? ( SPIa -- register ) \ Get status register
-  SPI.SR @
-;
-
-: spi-txe? ( SPIa -- T/F ) \ Is transmit buffer empty ?
-  spi-sr? 1 lshift 1 and
-;
-
-: spi-rxne? ( SPIa -- T/F ) \ Is receive buffer NOT empty ?
-  spi-sr? %1 and
-;
-
-: spi-bsy? ( SPIa -- busy ) \ Get busy flag
-  SPI.SR @
-  1 lshift 7 and
-;
-
-: spi@ ( SPIa -- SPI-DR ) \ Get [received] data from data register (RX buffer)
-  SPI.DR @
-;
-
-: spi! ( data SPIa -- ) \ Set [transmit] data register (TX buffer)
-  SPI.DR !
 ;
 
 compiletoram
