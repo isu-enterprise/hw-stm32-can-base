@@ -23,14 +23,21 @@ Old Philips projector control module
 
  - SPI1 CS/SCK/MISO/MOSI : PA4/PA5/PA6/PA7
  - Альтернатива - SPI1 CS/SCK/MISO/MOSI : PA15/PB3/PB4/PB5
- - Управление обменом
+ - Управление обменом c AD73360 GPIOC, PC14,PC15 (~RESET, +SE (!))
 
 ### Обмен с ILI, SPI2
 
  - SPI2 CS/SCK/MISO/MOSI : PB12/PB13/PB14/PB15
 
-### Обмен с Orenge PI, SPI3 или UART1
+### Обмен с Orenge PI, SPI2 или UART1
 
- - SPI3 CS/SCK/MISO/MOSI : PA15/PB3/PB4/PB5
- - UART2 TX/RX : PA9/PA10
+ - SPI2 CS/SCK/MISO/MOSI : PAPB12/PB13/PB14/PB15
+ - UART2 TX/RX : PA9/PA10 или PB6/PB7
  - Baud >> 115200
+
+### Управление Экраном ILI9488
+
+ - SPI3 PB5,4,3,PA16
+ - I2C1 PB7,PB6
+
+ - CS=B10, RS=b2, WR=b1, RD=:    RST->RESET
