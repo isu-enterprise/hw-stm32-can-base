@@ -91,16 +91,16 @@ compiletoflash
 ;
 
 : spi-enable! ( SPIa %1/0 -- )
-  swap >r
+  swap >r \ 1/0
   \ DMA?
   if
-    %111 5 lshift r@ SPI.CR2 bis! \ enable interrupts
+    \ %111 5 lshift r@ SPI.CR2 bis! \ enable interrupts
     1 6 lshift    r@ SPI.CR1 bis! \ enable
     \ enable peripheral clock
   else
-    spi-wait
+    \ spi-wait
     1 6 lshift    r@ SPI.CR1 bic! \ disable
-    %111 5 lshift r@ SPI.CR2 bic! \ disable interrupts
+    \ %111 5 lshift r@ SPI.CR2 bic! \ disable interrupts
     \ disable peripheral clock
   then
   rdrop

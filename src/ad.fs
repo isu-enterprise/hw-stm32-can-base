@@ -32,11 +32,11 @@ compiletoflash
 GPIOC constant ADIO
 
 : gpioc-setup-ad
-  LED.PIN   gpioc-pin-conf#        \ the LED for debugging
+  LED.PIN gpioc-pin-conf#        \ the LED for debugging
   ADIO LED.PIN 1 gpio-bsr!      \ Turn off LED
   RESET.PIN gpioc-pin-conf#        \ the ~RESET (FL0) of AD
   ADIO RESET.PIN 0 gpio-bsr!    \ ~RESET==0, i.e. SET TO RESET
-  SE.PIN    gpioc-pin-conf#        \ the SE (FL1) of AD
+  SE.PIN  gpioc-pin-conf#        \ the SE (FL1) of AD
   ADIO SE.PIN 0 gpio-bsr!       \ Set SE to 0, i.e. Chip is not SELECTED
 ;
 

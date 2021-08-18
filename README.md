@@ -37,7 +37,7 @@ Old Philips projector control module
 
 ### Управление Экраном ILI9488
 
- - SPI3 PB5,4,3,PA16
+ - SPI3 PB5,4,3,PA15 + PA0 for ~OE
  - I2C1 PB7,PB6
 
- - CS=B10, RS=b2, WR=b1, RD=:    RST->RESET
+ - CS=PB10, RS=PB2, WR=PB1, RD=PB0, RST->RESET
