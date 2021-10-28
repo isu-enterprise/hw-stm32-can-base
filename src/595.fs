@@ -46,9 +46,9 @@ GPIOA constant REG.PORT
 : reg-init-spi3-gpio ( -- )
   $1 $1 rcc-en!        \ Enable CLK Enable on port 1 = B
   GPIOB
-  dup 5 8 spi3-pin-conf#
-  dup 4 8 spi3-pin-conf#
-      3 8 spi3-pin-conf#
+  dup 5 6 spi3-pin-conf#
+  dup 4 6 spi3-pin-conf#
+      3 6 spi3-pin-conf#
 
   $0 $1 rcc-en!        \ Enable CLK Enable on port 0 = A
   GPIOA
@@ -56,6 +56,22 @@ GPIOA constant REG.PORT
 
 ;
 
+: spi3-speed! ( n -- )  \ !000 -- $111 divider value
+  3 lshift
+  SPI1 SPI.CR1
+    bis!
+;
+
+: spi3-low-speed!
+  $111 spi3-speed!
+;
+
+: spi3-high-speed!
+  $000 spi3-speed!
+;
+
+
+\ Tested OK
 : rcc-spi3-enable! ( %1/0 -- ) \ TODO: Move to spi.fs
   RCC RCC.APB1ENR swap \ a 1
   1 15 lshift swap \ a mask 1/0
@@ -116,6 +132,7 @@ GPIOA constant REG.PORT
 : reg-init ( -- )
   reg-init-gpio
   reg-init-spi
+  spi3-low-speed!  \ Debuggung
 ;
 
 : reg-wait-comm ( -- )
@@ -153,10 +170,10 @@ GPIOA constant REG.PORT
 : rt ( -- ) \ Register test
   rt-init
   ." Start comm" cr
-  reg-start
+  reg-start \ Enable SPI
   $88 >reg> ." GOT: " hex. cr
   $77 >reg> ." GOT: " hex. cr
   $F0 >reg> ." GOT: " hex. cr
-  reg-stop
+  \ reg-stop  \ TODO: faulty
   \ reg-disconn
 ;
