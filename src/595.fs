@@ -4,6 +4,21 @@ forgetram
 \ Controlling 74LS535 over SPI3
 \ USES spi.fs
 
+: spi-enable! ( SPIa %1/0 -- )
+  swap SPI.CR1 swap
+  \ DMA?
+  if
+    \ %111 5 lshift r@ SPI.CR2 bis! \ enable interrupts
+    1 6 lshift swap bis! \ enable
+    \ enable peripheral clock
+  else
+    \ spi-wait
+    1 6 lshift swap bic! \ disable
+    \ %111 5 lshift r@ SPI.CR2 bic! \ disable interrupts
+    \ disable peripheral clock
+  then
+;
+
 GPIOA constant REG.PORT
 0 constant REG.OE.PIN \ PA0
 
@@ -25,7 +40,7 @@ GPIOA constant REG.PORT
 ;
 
 : reg-init-gpio
-  $0 $1 rcc-en!        \ Enable CLK Enable on port 0 = A
+  %0 %1 rcc-en!        \ Enable CLK Enable on port 0 = A
   GPIOA REG.OE.PIN reg-pin-conf#
   reg-disconn \ Raise to shift to Zstate
 ;
@@ -44,30 +59,30 @@ GPIOA constant REG.PORT
 
 
 : reg-init-spi3-gpio ( -- )
-  $1 $1 rcc-en!        \ Enable CLK Enable on port 1 = B
+  %1 %1 rcc-en!        \ Enable CLK Enable on port 1 = B
   GPIOB
   dup 5 6 spi3-pin-conf#
   dup 4 6 spi3-pin-conf#
       3 6 spi3-pin-conf#
 
-  $0 $1 rcc-en!        \ Enable CLK Enable on port 0 = A
+  %0 %1 rcc-en!        \ Enable CLK Enable on port 0 = A
   GPIOA
       15 6 spi3-pin-conf#
 
 ;
 
-: spi3-speed! ( n -- )  \ !000 -- $111 divider value
-  3 lshift
-  SPI1 SPI.CR1
-    bis!
+: spi3-speed! ( n -- )  \ !000 -- %111 divider value
+  %111 3 lshift SPI3 SPI.CR1 bic!
+    3 lshift
+      SPI3 SPI.CR1 bis!
 ;
 
 : spi3-low-speed!
-  $111 spi3-speed!
+  %111 spi3-speed!
 ;
 
 : spi3-high-speed!
-  $000 spi3-speed!
+  %1000 spi3-speed!
 ;
 
 
@@ -137,7 +152,7 @@ GPIOA constant REG.PORT
 
 : reg-wait-comm ( -- )
   begin
-    SPI3 spi-busy? not key? or until
+    SPI3 spi-busy? 128 = not key? or until
 ;
 
 : reg! ( n -- ) \ Send 8 but to register
@@ -152,28 +167,55 @@ GPIOA constant REG.PORT
   SPI3 spi-rxne?
 ;
 
-: >reg> ( n -- n ) \
+: >reg> ( n -- n ) \ transmits byte and receives byte.
+  reg-start
   reg-wait-comm
   begin
     SPI3 spi-txe? until
   reg!
   reg-wait-comm
-  reg? if reg@ else ." >reg> NMO DATA" reg@ then
+  \ SPI3 spi-busy? ." busy: " . cr
+  \ reg? ." REG: " . cr reg@  \ if reg@ else ." >reg> NO DATA" reg@ then
+  reg@
+  reg-stop
 ;
 
 
 : rt-init
   reg-init
-  reg-conn
+;
+
+: spi.
+  SPI3 SPI.
+;
+
+: ddd
+  50000 0 do nop loop
+;
+
+: tc
+  ." Start comm test" cr
+  $88 >reg> ." GOT: " hex. cr
+  ddd
+  $77 >reg> ." GOT: " hex. cr
+  ddd
+  $F0 >reg> ." GOT: " hex. cr
+  ddd
+;
+
+: tc1
+  ." Start comm test" cr
+  $ff >reg> ." GOT: " hex. cr
+  ddd
+  $f0 >reg> ." GOT: " hex. cr
+  ddd
+  $00 >reg> ." GOT: " hex. cr
+  ddd
 ;
 
 : rt ( -- ) \ Register test
   rt-init
-  ." Start comm" cr
-  reg-start \ Enable SPI
-  $88 >reg> ." GOT: " hex. cr
-  $77 >reg> ." GOT: " hex. cr
-  $F0 >reg> ." GOT: " hex. cr
-  \ reg-stop  \ TODO: faulty
-  \ reg-disconn
+  reg-conn
+  tc
+  reg-disconn
 ;
