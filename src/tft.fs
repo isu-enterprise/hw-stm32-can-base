@@ -169,9 +169,9 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   spi3-high-speed!
   tft-reset
   50000 0 do loop
-  0 1 tft!   \ sw reset
+  0 1 tft!   \ !sw reset
   50000 0 do loop
-  0 $28 tft! \ Display off
+  0 $28 tft! \ !Display off
   \ Start init sequence
   $30 $83 $00 3 $CF \ Power control B
   tft!
@@ -183,29 +183,29 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   tft!
   $20 1 $F7 tft! \ Pump ratio control
   0 0 2 $EA tft! \ Driver timing control B
-  $26 1 $C0 tft! \ Power CTRL 1
-  $11 1 $C1 tft! \ Pwr CTRL 2
-  $3e $35 2 $C5 tft! \ VCOM CTRL 1
+  $26 1 $C0 tft! \ !Power CTRL 1
+  $11 1 $C1 tft! \ !Pwr CTRL 2
+  $3e $35 2 $C5 tft! \ !VCOM CTRL 1
   $be 1 $C7 tft! \ VCOM ctrl 2
-  $48 1 $36 tft! \ Mem access control
-  $55 1 $3a tft! \ Colmod pixel format set
-  $1b $00 2 $b1 tft! \ Frame rate
+  $48 1 $36 tft! \ !Mem access control
+  $55 1 $3a tft! \ ?Colmod pixel format set
+  $1b $00 2 $b1 tft! \ !Frame rate
   $08 1 $f2 tft! \ Gamma fun disable
-  $01 1 $26 tft! \ Gamma set for curve 01/2/04/08
+  $01 1 $26 tft! \-Gamma set for curve 01/2/04/08
   $00 $05 $07 $02 $07 $0a $32
   $87 $45 $06 $0f $0a $18 $1a
-  $1f 15 $E0 \ Positive gamma corr
+  $1f 15 $E0 \ !Positive gamma corr
   tft!
   $1f $3a $38 $0d $18 $05 $4d
   $78 $3a $09 $10 $05 $27 $25
-  $00 15 $E1 \ Negative ...
+  $00 15 $E1 \ !Negative ...
   tft!
   tft-win-max
-  $07 1 $b7 tft! \ Entry mode
-  $00 $27 $82 $0a 4 $B6 tft! \ Display function control
-  0 $11 tft! \ Sleep out
+  $07 1 $b7 tft! \ !Entry mode
+  $00 $27 $82 $0a 4 $B6 tft! \ !Display function control
+  0 $11 tft! \ !Sleep out
   50000 0 do loop
-  0 $29 tft! \ Display on
+  0 $29 tft! \ !Display on
   50000 0 do loop
 ;
 
