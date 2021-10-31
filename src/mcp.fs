@@ -5,7 +5,8 @@ forgetram
 \ USES spi.fs
 
 GPIOA constant MCP.PORT
-0 constant MCP.RESET.PIN \ PA0
+0  constant MCP.RESET.PIN \ PA0
+$f constant MCP.NSS.PIN   \ PA15
 
 : mcp-pin-conf# ( GPIOa pin -- )
   >r
@@ -15,7 +16,6 @@ GPIOA constant MCP.PORT
       r> %00 gpio-ospeed! \ OUTPUT Low Speed
 ;
 
-
 : mcp-reset ( -- ) \ Connect Qx to output
   GPIOA MCP.RESET.PIN 0 gpio-bsr!
 ;
@@ -24,9 +24,18 @@ GPIOA constant MCP.PORT
   GPIOA MCP.RESET.PIN 1 gpio-bsr!
 ;
 
+: mcp-nss ( -- ) \ Command Start condition
+  GPIOA MCP.NSS.PIN 0 gpio-bsr!
+;
+
+: -mcp-nss ( -- ) \ Command Stop condition
+  GPIOA MCP.NSS.PIN 1 gpio-bsr!
+;
+
 : mcp-init-gpio        \ Reset pin of MCP
   %0 %1 rcc-en!        \ Enable CLK Enable on port 0 = A
   GPIOA MCP.RESET.PIN mcp-pin-conf#
+  GPIOA MCP.NSS.PIN mcp-pin-conf#
 ;
 
 
@@ -49,9 +58,9 @@ GPIOA constant MCP.PORT
   dup 4 6 spi3-pin-conf#
       3 6 spi3-pin-conf#
 
-  %0 %1 rcc-en!        \ Enable CLK Enable on port 0 = A
-  GPIOA
-      15 6 spi3-pin-conf#
+  \ %0 %1 rcc-en!        \ Enable CLK Enable on port 0 = A
+  \ GPIOA
+  \     15 6 spi3-pin-conf#
 
 ;
 
@@ -86,22 +95,6 @@ GPIOA constant MCP.PORT
 ;
 
 
-
-  \ hspi3.Instance = SPI3;
-  \ hspi3.Init.Mode = SPI_MODE_MASTER;
-  \ hspi3.Init.Direction = SPI_DIRECTION_2LINES;
-  \ hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
-  \ hspi3.Init.CLKPolarity = SPI_POLARITY_LOW;
-  \ hspi3.Init.CLKPhase = SPI_PHASE_1EDGE;
-  \ hspi3.Init.NSS = SPI_NSS_SOFT;
-  \ hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
-  \ hspi3.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  \ hspi3.Init.TIMode = SPI_TIMODE_DISABLE;
-  \ hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  \ hspi3.Init.CRCPolynomial = 10;
-
-\ 74LS595 supports approx 7 Mhz at 3.3 V CLK
-
 : mcp-init-spi ( -- )
   mcp-init-spi3-gpio
   1 rcc-spi3-enable! \ ENABLE CLK in order to allow configuration
@@ -111,32 +104,47 @@ GPIOA constant MCP.PORT
     dup SPI.CR2
        dup 1 4 lshift swap bic!  \ NO TI Mode
        dup %111 5 lshift swap bic! \ Disable interrupts
-       dup 1 2 lshift swap bis!  \ ENABLE SSOE, output NSS when hardware mngmt.
+       dup 1 2 lshift swap bic!  \ DISABLE SSOE, we will control ourselves
+       dup %11 swap bic!         \ DISABLE DMA ints
        drop
     dup SPI.CR1
        dup 1 11 lshift swap bic! \ 8 bit
-       dup 1 9 lshift swap bic!  \ Disable SSM (Enable hardware mngmt of NSS)
+       dup 1 9 lshift swap bis!  \ ENABLE SSM
+       dup 1 8 lshift swap bis!  \ ENABLE SSI
        dup 1 1 lshift swap bis!  \ CPOL=1
        dup 1 swap bis!           \ CPOL=1
        dup 1 2 lshift swap bis!  \ MASTER Mode !
        dup %010 3 lshift swap bis! \ Baud rate = 16Mhz/8 = 2Mhz < 7 MHz at 3.3V
+       \ MSB
+       \
        drop
     drop
 ;
 
+: _w
+  10 0 do loop
+;
+
 : mcp-start ( -- ) \ Start communications
   SPI3 1 spi-enable! \ NSS goes low if configuration is OK
+  _w
+  mcp-nss
+  _w
 ;
 
 : mcp-stop ( -- ) \ Finish communications, rising NSS
-  SPI3 0 spi-enable!
+  _w
+  -mcp-nss
+  _w
+  \ SPI3 0 spi-enable!
 ;
 
 : mcp-init ( -- )
   mcp-init-gpio
+  -mcp-nss
   mcp-init-spi
   mcp-reset
-  1000 0 do loop
+  _w _w _w
   -mcp-reset
   \ spi3-low-speed!  \ Debuggung
   spi3-high-speed!  \ Release 10 Mhz possible / 8? by default
@@ -167,8 +175,8 @@ GPIOA constant MCP.PORT
 
 : >spi3> ( n -- n ) \ transmits byte and receives byte.
   mcp-wait-comm
-  begin
-    SPI3 spi-txe? until
+  \ begin
+  \   SPI3 spi-txe? until \ Redundant as BUSY cover this
   spi3!
   mcp-wait-comm
   spi3@
@@ -242,7 +250,7 @@ GPIOA constant MCP.PORT
   0 mcp@
 ;
 
-: mcp. cr $1b 0 do i hex. i mcp@ hex. cr mcp-delay loop ;
+: mcp. cr $1b 0 do i hex. i mcp@ hex. cr loop ;
 
 : mcp-scan
   8 0 do
@@ -251,6 +259,3 @@ GPIOA constant MCP.PORT
     mcp.
   loop
 ;
-
-
-: fmcp. $1b 0 do i hex. i mcp@ hex. cr loop ;
