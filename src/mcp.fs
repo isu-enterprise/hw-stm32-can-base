@@ -250,7 +250,7 @@ $f constant MCP.NSS.PIN   \ PA15
   0 mcp@
 ;
 
-: mcp. cr $1b 0 do i hex. i mcp@ hex. cr loop ;
+: mcp. cr $10 0 do i hex. i mcp@ bin. cr loop ;
 
 : mcp-scan
   8 0 do
@@ -259,3 +259,18 @@ $f constant MCP.NSS.PIN   \ PA15
     mcp.
   loop
 ;
+
+: A ;
+: B 1+ ;
+
+$00 constant IODIR \ I/O Direction reg. r/w 1 - input, 0 - output
+$02 constant IPOL  \ Input polarity reg. rw 1 - invert input, 0 - no inversion
+$04 constant GPINTEN \ Interrupt on change control reg, rw, 1 is set.
+$06 constant DEFVAL \ Default compare value for GPINTEN. Opposite val cause int.
+$08 constant INTCON \ Interrupt control reg. 1 - compare against defval, 0 - against prev val
+$0A constant IOCON \ Configure device
+$0C constant GPPU  \ Pull up register 1 - pulls 100K for inputs
+$0E constant INTF  \ Interrupt flag reg. 1 - Int enabled on pin.
+$10 constant INTCAP \ Interrupt capture reg. ro.
+$12 constant GPIO  \ Port register.
+$14 constant OLAT  \ Output latch. Read from OLAT (not port). Writing id for output.
