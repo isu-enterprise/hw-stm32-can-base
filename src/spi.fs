@@ -46,15 +46,15 @@ compiletoflash
 ;
 
 : spi-txe? ( SPIa -- T/F ) \ Is transmit buffer empty ?
-  spi-s? 1 1 lshift and
+  spi-s? %1 1 lshift and 0 >
 ;
 
 : spi-rxne? ( SPIa -- T/F ) \ Is receive buffer NOT empty ?
-  spi-s? %1 and
+  spi-s? %1 and 0 >
 ;
 
 : spi-busy? ( SPIa -- busy ) \ Get busy flag
-  spi-s? 1 7 lshift and
+  spi-s? %1 7 lshift and 0 >
 ;
 
 : spi@ ( SPIa -- SPI-DR ) \ Get [received] data from data register (RX buffer)
@@ -67,7 +67,7 @@ compiletoflash
 
 : spi1-en! ( %1/0 -- )
   RCC RCC.APB2ENR
-  1 12 lshift \ 1/0 a mask
+  %1 12 lshift \ 1/0 a mask
   rot
   if
     swap bis!

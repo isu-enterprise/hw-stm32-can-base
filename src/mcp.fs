@@ -66,7 +66,11 @@ GPIOA constant MCP.PORT
 ;
 
 : spi3-high-speed!
-  %1000 spi3-speed!
+  %000 spi3-speed!
+;
+
+: spi3-mid-speed!
+  %010 spi3-speed!
 ;
 
 
@@ -110,7 +114,7 @@ GPIOA constant MCP.PORT
        dup 1 2 lshift swap bis!  \ ENABLE SSOE, output NSS when hardware mngmt.
        drop
     dup SPI.CR1
-       dup 1 11 lshift swap bis! \ 16 bit
+       dup 1 11 lshift swap bic! \ 8 bit
        dup 1 9 lshift swap bic!  \ Disable SSM (Enable hardware mngmt of NSS)
        dup 1 1 lshift swap bis!  \ CPOL=1
        dup 1 swap bis!           \ CPOL=1
@@ -134,12 +138,19 @@ GPIOA constant MCP.PORT
   mcp-reset
   1000 0 do loop
   -mcp-reset
-  spi3-low-speed!  \ Debuggung
+  \ spi3-low-speed!  \ Debuggung
+  spi3-high-speed!  \ Release 10 Mhz possible / 8? by default
 ;
+
+\ : mcp-wait-comm ( -- )
+\   begin
+\     SPI3 spi-busy? 128 = not key? or until
+\ ;
 
 : mcp-wait-comm ( -- )
   begin
-    SPI3 spi-busy? 128 = not key? or until
+    SPI3 spi-busy? not
+  until
 ;
 
 : spi3! ( n -- ) \ Send 8 but to MCP
@@ -176,32 +187,35 @@ GPIOA constant MCP.PORT
   50000 0 do nop loop
 ;
 
+0 variable MCP.ADDR
 
 : mcp-read-bit ( %1/0 -- %0100 ABC R ) \ R as input
-  %01001110 or 8 lshift
+  \ %01001110 or
+  %01000000 or
+  MCP.ADDR @ %111 and 1 lshift or
 ;
 
-: mcp-cmd ( DATA CMD -- Word )
+: mcp-cmd ( DATA/8 CMD/8 ADDR/8 -- Word )
   mcp-start
+  \ ." At mcp-cmd" cr
   \ h.s cr cr
+  >spi3> drop \ Addr
   >spi3> drop \ . cr
   >spi3>
   mcp-stop
 ;
 
 
-: mcp! ( reg byte1 byte2 -- ? ?)
-  swap 8 lshift or
-  swap
-  0 mcp-read-bit or  \ Command = <0100AAAW REG> <BYTE1 BYTE2>
-  h.s
+: mcp! ( byte reg -- )
+  0 mcp-read-bit  \ Command = <0100AAAW> <REG> <BYTE>
   mcp-cmd
-  bin.  \ debug
+  drop
+  \ bin.  \ debug
 ;
 
-: mcp@ ( reg -- Word)
-  1 mcp-read-bit or  \ Command = <0100AAAW REG> <BYTE1 BYTE2>
-  0 swap
+: mcp@ ( reg -- byte )
+  0 swap   \ Blank data first
+  1 mcp-read-bit \ Command = <0100AAAW> <REG> <dummy BYTE>
   mcp-cmd
 ;
 
@@ -220,6 +234,23 @@ GPIOA constant MCP.PORT
   mt-init
 ;
 
-mt
+: tt
+  mt
+  mcp-delay
+  $0f 0 mcp!
+  mcp-delay
+  0 mcp@
+;
 
-: mcp. $1b 0 do i hex. i mcp@ hex. cr loop ;
+: mcp. cr $1b 0 do i hex. i mcp@ hex. cr mcp-delay loop ;
+
+: mcp-scan
+  8 0 do
+    i MCP.ADDR   !
+    cr ." scanning " MCP.ADDR @ hex. cr
+    mcp.
+  loop
+;
+
+
+: fmcp. $1b 0 do i hex. i mcp@ hex. cr loop ;
