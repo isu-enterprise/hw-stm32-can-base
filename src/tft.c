@@ -490,7 +490,6 @@ void SPI_TFT_ILI9341::cls (void)
 void SPI_TFT_ILI9341::circle(int x0, int y0, int r, int color)
 {
 
-Evgeny Cherkashin, [11.10.21 19:34]
 int x = -r, y = 0, err = 2-2*r, e2;
     do {
         pixel(x0-x, y0+y,color);
@@ -677,7 +676,6 @@ void SPI_TFT_ILI9341::fillrect(int x0, int y0, int x1, int y1, int color)
     DMA_InitStructure.DMA_MemoryBaseAddr  = (uint32_t) &color;
     DMA_InitStructure.DMA_MemoryInc  = DMA_MemoryInc_Disable;
 
-Evgeny Cherkashin, [11.10.21 19:34]
 switch(spi_num){        // decide which SPI is to use
     case (1):
         DMA_Init(DMA1_Channel3, &DMA_InitStructure);  // init the DMA

@@ -27,7 +27,7 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
 
 : ti-data-write
   TI.DR @ if       \ Is the prev state read?
-    ." init DR" cr
+    \ ." init DR" cr
     0 IODIR _dr mcp! \ Data register set as output
     false TI.DR !
   then
@@ -139,16 +139,20 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
 
 : tft! ( Dn-1 ... D0 n cmd - )
   tft-csx
+  \ ." CMD:" dup hex. cr
   tft-cmd!
   \ .s cr
   0 ?do
+    \ dup hex. bl emit
     tft-dw!
   loop
+  \ cr
   -tft-csx
 ;
 
 
 : tft@ ( n cmd -- Dn-1 ... Dn1 D0 n )
+  swap
   >r
   tft-csx
   tft-cmd!
@@ -190,7 +194,8 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   $41 1 $C1 tft! \ Pwr CTRL 2
   $80 $12 $00 3 $C5 tft! \ !VCOM CTRL
   $48 1 $36 tft! \ Mem access control
-  $55 1 $3A tft! \ Pixel interface format ||
+  \ $55 1 $3A tft! \ 16bit/Pixel interface format ||
+  $66 1 $3A tft! \ 18bit/Pixel interface format ||
   $00 1 $B0 tft! \ Interface mode control
   $a0 1 $B1 tft! \ Frame rate
   $02 1 $B4 tft! \ Display inversion control
@@ -207,13 +212,71 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
 ;
 
 
-: tftt
-  tft-init
-  \ 0 1 2 3 4 5
-  \ 6
-  \ $0f
-  \ tft!
+: int2bytes ( int/16 -- byteL/8 byteH/8 ) \ ? MSB!
+  dup
+  8 rshift $FF and
+  swap
+  $FF and
+  swap
 ;
+
+: tft-pixel ( B G R y x -- )
+  dup 1+ swap >r \ x+1 R:x
+  int2bytes r> \ bh+ bl+ x
+  int2bytes \ bh+ bl+ bh bl
+  4 $2A tft!
+  dup 1+ swap >r
+  int2bytes r>
+  int2bytes
+  4 $2B tft!
+  3 $2C tft!
+;
+
+: tft-vline ( B G R y x1 x0 -- )
+  2dup < if swap then
+  swap 1+ swap
+  do
+    \ i . cr
+    2over 2over i tft-pixel
+  loop
+  2drop 2drop
+;
+
+
+\ Testing assets
+
+: it
+  tft-init
+;
+: t
+  ." Pixel test"
+  $00 $FF $00 100 100 tft-pixel
+  ." Done" cr
+  ." Vline test"
+  $00 $00 $00 10 100 0 tft-vline
+  ." Done" cr
+;
+
+
+: tft-diag ( n -- )
+  0 do
+    $00 $FF $00 i i tft-pixel
+  loop
+;
+
+
+: tft-clear
+  320 0 do
+    480 0 do
+      0 0 0 j i tft-pixel
+    loop
+  loop
+;
+
+
+
+
+
 
 
 compiletoram
