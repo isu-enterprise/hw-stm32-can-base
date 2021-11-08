@@ -48,7 +48,7 @@ $f constant MCP.NSS.PIN   \ PA15
   over r@ %11 gpio-ospeed! \ HUIGH SPEED
   over r@ %00 gpio-pupd!   \ NO-PULL
   r>   \ GPIOa af pin
-  swap   gpio-af!     \ 8 on PB = SPI Altern.funct. on port A
+  swap   gpio-af!     \ 6 on PB = SPI Altern.funct.
 ;
 
 
@@ -66,40 +66,9 @@ $f constant MCP.NSS.PIN   \ PA15
 
 ;
 
-: spi3-speed! ( n -- )  \ !000 -- %111 divider value
-  %111 3 lshift SPI3 SPI.CR1 bic!
-    3 lshift
-      SPI3 SPI.CR1 bis!
-;
-
-: spi3-low-speed!
-  %111 spi3-speed!
-;
-
-: spi3-high-speed!
-  %000 spi3-speed!
-;
-
-: spi3-mid-speed!
-  %010 spi3-speed!
-;
-
-
-\ Tested OK
-: rcc-spi3-enable! ( %1/0 -- ) \ TODO: Move to spi.fs
-  RCC RCC.APB1ENR swap \ a 1
-  1 15 lshift swap \ a mask 1/0
-  if
-    swap bis!
-  else
-    swap bic!
-  then
-;
-
-
 : mcp-init-spi ( -- )
   mcp-init-spi3-gpio
-  1 rcc-spi3-enable! \ ENABLE CLK in order to allow configuration
+  true rcc-spi3-enable! \ ENABLE CLK in order to allow configuration
   SPI3
     \ CPOL=1 CPCHA=1 no TI
     \ dup 0 spi-enable! \ HANGS
@@ -156,34 +125,6 @@ $f constant MCP.NSS.PIN   \ PA15
 \   begin
 \     SPI3 spi-busy? 128 = not key? or until
 \ ;
-
-: mcp-wait-comm ( -- )
-  begin
-    SPI3 spi-busy? not
-  until
-;
-
-: spi3! ( n -- ) \ Send 8 but to MCP
-  SPI3 spi!
-;
-
-: spi3@ ( -- n ) \ get value
-  SPI3 spi@
-;
-
-: spi3? ( -- n ) \ Is there dat received
-  SPI3 spi-rxne?
-;
-
-: >spi3> ( n -- n ) \ transmits byte and receives byte.
-  mcp-wait-comm
-  \ begin
-  \   SPI3 spi-txe? until \ Redundant as BUSY cover this
-  spi3!
-  mcp-wait-comm
-  spi3@
-;
-
 
 : mt-init
   mcp-init

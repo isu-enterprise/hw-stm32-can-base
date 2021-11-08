@@ -31,9 +31,9 @@ compiletoflash
 \ RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE) ?
 
 
-: rcc-spi1-enable! ( 1/0 -- ) \ Enable communications
+: rcc-spi1-enable! ( bool -- ) \ Enable communications
   RCC RCC.APB2ENR swap
-  1 12 lshift swap
+  1 12 lshift -rot
   if
     bis!
   else
@@ -41,20 +41,28 @@ compiletoflash
   then
 ;
 
-: spi-s? ( SPIa -- register ) \ Get status register
-  SPI.SR @
+: rcc-spi3-enable! ( bool -- )
+  RCC RCC.APB1ENR swap \ addr bool
+  1 15 lshift \ addr bool mask
+  -rot \ mask addr bool
+  if
+    bis!
+  else
+    bic!
+  then
 ;
 
+
 : spi-txe? ( SPIa -- T/F ) \ Is transmit buffer empty ?
-  spi-s? %1 1 lshift and 0 >
+  SPI.SR %1 1 lshift swap bit@
 ;
 
 : spi-rxne? ( SPIa -- T/F ) \ Is receive buffer NOT empty ?
-  spi-s? %1 and 0 >
+  SPI.SR %1 swap bit@
 ;
 
 : spi-busy? ( SPIa -- busy ) \ Get busy flag
-  spi-s? %1 7 lshift and 0 >
+  SPI.SR %1 7 lshift swap bit@
 ;
 
 : spi@ ( SPIa -- SPI-DR ) \ Get [received] data from data register (RX buffer)
@@ -103,6 +111,58 @@ compiletoflash
     \ %111 5 lshift r@ SPI.CR2 bic! \ disable interrupts
     \ disable peripheral clock
   then
+;
+
+
+
+: spi-speed! ( SPIa n -- )  \ !000 -- %111 divider value
+  swap SPI.CR1 >r \ n
+  %111 3 lshift r@ bic!
+  3 lshift
+    r> bis!
+;
+
+: spi3-speed! ( n -- )  \ !000 -- %111 divider value
+  SPI3 swap spi-speed!
+;
+
+
+: spi3-low-speed!
+  %111 spi3-speed!
+;
+
+: spi3-high-speed!
+  %000 spi3-speed!
+;
+
+: spi3-mid-speed!
+  %010 spi3-speed!
+;
+
+: spi3! ( n -- ) \ Send 8/16 but to MCP
+  SPI3 spi!
+;
+
+: spi3@ ( -- n ) \ get value
+  SPI3 spi@
+;
+
+: spi3? ( -- n ) \ Is there dat received
+  SPI3 spi-rxne?
+;
+
+: spi-wait-comm ( SPIa -- )
+  begin
+    dup spi-busy? not
+  until
+  drop
+;
+
+: >spi3> ( n -- n ) \ transmits byte/word and receives byte/word.
+  SPI3 spi-wait-comm
+  spi3!
+  SPI3 spi-wait-comm
+  spi3@
 ;
 
 
