@@ -196,6 +196,14 @@ $f constant REG.NSS.PIN   \ PA15
   loop
 ;
 
+: reg-cnt
+  256 0 do
+    i 8 lshift i or dup hex. space
+     >reg> hex. cr
+    _ww
+  loop
+;
+
 : regb
   reg-blink
 ;
