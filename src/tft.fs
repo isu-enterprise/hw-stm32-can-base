@@ -57,19 +57,20 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
 ;
 
 : ti-poll-mode ( -- )
-  %00000000
+  %00100000
   dup ti-data-iocon!
       ti-ctrl-iocon!
 ;
 
 : ti-switch-mode ( -- )
-  %00100000
+  %00000000
   dup ti-data-iocon!
       ti-ctrl-iocon!
 ;
 
 : ti-init        \ init TFT interface
   mcp-init
+  ti-poll-mode
   true TI.DR !
   ti-data-write
   ti-ctrl-write
@@ -87,6 +88,20 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
 
 : ti-cr! ( byte -- )  \ Write to _cr
   GPIO _cr mcp!
+;
+
+: ti-pre! ( -- ) \ write GPIO PREAMBLE and do not raise MCP-CS
+  mcp-start
+  0 mcp-read-bit
+  >spi3> drop   \ Dev addr + write bit
+  GPIO _cr >spi3> drop \ MCP.GPIOB (TFT CMD) register address
+;
+
+: ti-pre@ ( -- ) \ write cmd read bytes
+  mcp-start
+  1 mcp-read-bit
+  >spi3> drop
+  GPIO _cr >spi3> drop
 ;
 
 : ti-blink ( -- )  \ Test blinking
@@ -119,32 +134,49 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
 ;
 
 : tft-csx
+  ti-pre!
   1 3 lshift TFT.CR bic!
-  tft-cr!
+  \ tft-cr!
+  TFT.CR @
+  >spi3> drop
+  0 >spi3> drop \ skip data
 ;
 
 : -tft-csx
   1 3 lshift TFT.CR bis!
-  tft-cr!
+  \ tft-cr!
+  TFT.CR @
+  >spi3> drop
+  mcp-stop
 ;
 
 : tft-cmd! ( cmd -- )
   %11 1 lshift \ RS, WR _
-    TFT.CR bic!
-  tft-cr!
-  ti-dr!
+  TFT.CR bic!
+  TFT.CR @ >spi3> drop
+  dup >spi3> drop \ Drop answer to cmd
+  \ tft-cr!
+  \ ti-dr!
   1 1 lshift TFT.CR bis! \ WR /
-  tft-cr!
+  \ tft-cr!
+  TFT.CR @ >spi3> drop
+  dup >spi3> drop \ a copy of data
   1 2 lshift TFT.CR bis! \ CMD _-
+  TFT.CR @ >spi3> drop
+  >spi3> drop \ a copy of data
 ;
 
 : tft-dw! ( D -- )  \ Lower
   %101 TFT.CR bis!
   %010 TFT.CR bic!
-  tft-cr!
-  ti-dr!
+  TFT.CR @ >spi3> drop
+  \ tft-cr!
+  \ ti-dr!
+  dup >spi3> drop
   %010 TFT.CR bis!
-  tft-cr!
+  TFT.CR @ >spi3> drop
+  >spi3> drop
+  \ tft-cr!
 ;
 
 
