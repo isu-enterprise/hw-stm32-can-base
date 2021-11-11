@@ -48,6 +48,26 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   $ff IODIR _cr mcp!
 ;
 
+: ti-data-iocon! ( byte -- )
+  IOCON _dr mcp!
+;
+
+: ti-ctrl-iocon! ( byte -- )
+  IOCON _cr mcp!
+;
+
+: ti-poll-mode ( -- )
+  %00000000
+  dup ti-data-iocon!
+      ti-ctrl-iocon!
+;
+
+: ti-switch-mode ( -- )
+  %00100000
+  dup ti-data-iocon!
+      ti-ctrl-iocon!
+;
+
 : ti-init        \ init TFT interface
   mcp-init
   true TI.DR !
@@ -269,6 +289,18 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   320 0 do
     480 0 do
       0 0 0 i j tft-pixel
+    loop
+  loop
+;
+
+: tft-bar
+  100 0 do
+    100 0 do
+      \ 0 0 0 - white
+      \ 0 FF 0 - magenta
+      \ 0 0 FF - cyan
+      \ FF 0 0 - yellow
+      $ff $FF $FF i j tft-pixel
     loop
   loop
 ;
