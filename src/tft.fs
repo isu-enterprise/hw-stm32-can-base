@@ -134,7 +134,7 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
 ;
 
 : tft-csx
-  ti-pre!
+  \ ti-pre!
   1 3 lshift TFT.CR bic!
   \ tft-cr!
   TFT.CR @
@@ -147,7 +147,7 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   \ tft-cr!
   TFT.CR @
   >spi3> drop
-  mcp-stop
+  \ mcp-stop
 ;
 
 : tft-cmd! ( cmd -- )
@@ -189,19 +189,28 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   ti-dr@
 ;
 
-: tft! ( Dn-1 ... D0 n cmd - )
-  tft-csx
-  \ ." CMD:" dup hex. cr
-  tft-cmd!
-  \ .s cr
+: tft-data! ( Dn-1 .... D0 n -- )
   0 ?do
-    \ dup hex. bl emit
     tft-dw!
   loop
-  \ cr
-  -tft-csx
 ;
 
+: tft-pre! ( Dn-1 ... D0 n cmd -- ) \ Start write and do not close TFT.CSX
+  ti-pre!
+  tft-csx
+  tft-cmd!
+  tft-data!
+;
+
+: tft-fini!
+  -tft-csx
+  mcp-stop
+;
+
+: tft! ( Dn-1 ... D0 n cmd -- ) \ Write and close CSX
+  tft-pre!
+  tft-fini!
+;
 
 : tft@ ( n cmd -- Dn-1 ... Dn1 D0 n )
   swap
@@ -276,12 +285,13 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   dup 1+ swap >r \ x+1 R:x
   int2bytes r> \ bh+ bl+ x
   int2bytes \ bh+ bl+ bh bl
-  4 $2A tft!
+  4 $2A tft-pre!
   dup 1+ swap >r
   int2bytes r>
   int2bytes
-  4 $2B tft!
-  3 $2C tft!
+  4 $2B tft-cmd! tft-data!
+  3 $2C tft-cmd! tft-data!
+  tft-fini!
 ;
 
 : tft-vline ( B G R y x1 x0 -- )
