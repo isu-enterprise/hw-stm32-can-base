@@ -268,7 +268,7 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
 : tft-clear
   320 0 do
     480 0 do
-      0 0 0 j i tft-pixel
+      0 0 0 i j tft-pixel
     loop
   loop
 ;

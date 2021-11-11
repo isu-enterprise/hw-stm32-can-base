@@ -1,6 +1,6 @@
 
 forgetram
-compiletoram
+compiletoflash
 
 \ Controlling 74LS535 over SPI3
 \ USES spi.fs
