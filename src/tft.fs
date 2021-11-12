@@ -323,7 +323,6 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   tft-fill
 ;
 
-
 : tft-pixel ( B G R y x -- )
   dup >r \ x+1 R:x
   int2bytes r> \ bh+ bl+ x
@@ -339,9 +338,16 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
 
 : tft-hline ( B G R y x1 x0 -- )
   2dup - 1+ >r \ no of pixels
-  tft-def-x
-  dup
-  tft-def-y
+  rot dup 2swap
+  tft-rect
+  r> \ No of pixels
+  tft-fill \ TODO: Deinits TFT
+;
+
+: tft-vline ( B G R x y1 y0 -- )
+  2dup - 1+ >r \ no of pixels
+  rot dup
+  tft-rect
   r> \ No of pixels
   tft-fill \ TODO: Deinits TFT
 ;
