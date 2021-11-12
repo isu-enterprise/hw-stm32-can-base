@@ -266,6 +266,9 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
 
   tft-win-max
 
+  0 $21 tft! \ Display Inversion ON
+  \ 0 $20 tft! \ Display Inversion OFF
+
   0 $11 tft! \ Sleep out
   50000 0 do loop
   0 $29 tft! \ Display on
@@ -281,12 +284,52 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   swap
 ;
 
+: tft-def-x ( x1 x0 -- )
+  0 $2A tft-pre!
+  int2bytes tft-dw! tft-dw! \ x0
+  int2bytes tft-dw! tft-dw!  \ x1
+;
+
+: tft-def-y ( y1 y0 -- )
+  $2B tft-cmd!
+  int2bytes tft-dw! tft-dw!  \ y0
+  int2bytes tft-dw! tft-dw!  \ y1
+;
+
+: tft-rect ( y1 y0 x1 x0 -- )
+  tft-def-x
+  tft-def-y
+  tft-fini!
+;
+
+: tft-fill ( B G R n -- ) \ Fill rect wit n pixels
+  0 $2C tft-pre!
+  0 ?do
+    dup tft-dw!  \ R
+    over tft-dw! \ G
+    2 pick tft-dw! \ B
+  loop
+  drop 2drop
+  tft-fini!
+;
+
+: tft-full-rect ( -- )
+  479 0 319 0 tft-rect \ 153600 pixels
+;
+
+: tft-bkg ( B G R -- ) \ Fill background wit a color
+  tft-full-rect
+  320 480 *
+  tft-fill
+;
+
+
 : tft-pixel ( B G R y x -- )
-  dup 1+ swap >r \ x+1 R:x
+  dup >r \ x+1 R:x
   int2bytes r> \ bh+ bl+ x
   int2bytes \ bh+ bl+ bh bl
   4 $2A tft-pre!
-  dup 1+ swap >r
+  dup >r
   int2bytes r>
   int2bytes
   4 $2B tft-cmd! tft-data!
@@ -294,14 +337,13 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   tft-fini!
 ;
 
-: tft-vline ( B G R y x1 x0 -- )
-  2dup < if swap then
-  swap 1+ swap
-  do
-    \ i . cr
-    2over 2over i tft-pixel
-  loop
-  2drop 2drop
+: tft-hline ( B G R y x1 x0 -- )
+  2dup - 1+ >r \ no of pixels
+  tft-def-x
+  dup
+  tft-def-y
+  r> \ No of pixels
+  tft-fill \ TODO: Deinits TFT
 ;
 
 
