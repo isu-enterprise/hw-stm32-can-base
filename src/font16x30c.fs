@@ -1,4 +1,4 @@
-\ compiletoflash
+compiletoflash
 \ 15 15bit words encode 30-line characters
 \ each word is two lines <n1><n+1> <n+2><n+3>
 \ width in 16 bit
