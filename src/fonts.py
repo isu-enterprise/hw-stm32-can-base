@@ -13,10 +13,13 @@ def num():
 
 print ("""\ compiletoflash
 create font16x30""")
+k = True
 for l1,l2 in itertools.pairwise(num()):
-    l1=l1[4:]
-    l2=l2[4:]
-    print ('  ${} ,'.format(l1+l2))
+    if k:
+        l1=l1[4:]
+        l2=l2[4:]
+        print ('  ${} ,'.format(l1+l2))
+    k = not k
 
 print("""compiletoram
 """)
