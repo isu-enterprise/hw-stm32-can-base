@@ -352,7 +352,6 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   tft-fill \ TODO: Deinits TFT
 ;
 
-
 \ Testing assets
 
 : it
@@ -374,25 +373,22 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   loop
 ;
 
-
 : tft-clear
-  320 0 do
-    480 0 do
-      0 0 0 i j tft-pixel
-    loop
-  loop
+  0 0 0 tft-bkg
 ;
 
-: tft-bar
-  100 0 do
-    100 0 do
-      \ 0 0 0 - white
-      \ 0 FF 0 - magenta
-      \ 0 0 FF - cyan
-      \ FF 0 0 - yellow
-      $ff $FF $FF i j tft-pixel
-    loop
-  loop
+\ inverse colors
+\ 0 0 0 - white
+\ 0 FF 0 - magenta
+\ 0 0 FF - cyan
+\ FF 0 0 - yellow
+
+
+: tft-bar ( B G R y1 y0 x1 x0 )
+  2over - 1+ >r
+  2dup - 1+ r> * >r
+  tft-rect
+  r> tft-fill
 ;
 
 
