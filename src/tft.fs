@@ -1,6 +1,7 @@
 
-compiletoram
-forgetram
+\ compiletoram
+\ forgetram
+compiletoflash
 
 \ Controlling MCP23S17 over SPI3
 \ USES mcp.fs
@@ -212,21 +213,21 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   tft-fini!
 ;
 
-: tft@ ( n cmd -- Dn-1 ... Dn1 D0 n )
-  swap
-  >r
-  tft-csx
-  tft-cmd!
-  r@
-  0 ?do
-    tft-dr@
-  loop
-  r>
-  -tft-csx
-;
+\ : tft@ ( n cmd -- Dn-1 ... Dn1 D0 n )
+\   swap
+\   >r
+\   tft-csx
+\   tft-cmd!
+\   r@
+\   0 ?do
+\     tft-dr@
+\   loop
+\   r>
+\   -tft-csx
+\ ;
 
-: tft-win-max
-;
+\ : tft-win-max
+\ ;
 
 
 : tft-init
@@ -264,7 +265,7 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   $c6 1 $B7 tft! \ Entry mode
   $82 $2c $51 $a9 4 $F7 tft! \ Adjust control 3
 
-  tft-win-max
+  \ tft-win-max
 
   0 $21 tft! \ Display Inversion ON
   \ 0 $20 tft! \ Display Inversion OFF
@@ -354,17 +355,18 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
 
 \ Testing assets
 
-: it
-  tft-init
-;
-: t
-  ." Pixel test"
-  $00 $FF $00 100 100 tft-pixel
-  ." Done" cr
-  ." Vline test"
-  $00 $00 $00 10 100 0 tft-vline
-  ." Done" cr
-;
+\ : it
+\   tft-init
+\ ;
+
+\ : t
+\   ." Pixel test"
+\   $00 $FF $00 100 100 tft-pixel
+\   ." Done" cr
+\   ." Vline test"
+\   $00 $00 $00 10 100 0 tft-vline
+\   ." Done" cr
+\ ;
 
 
 : tft-diag ( n -- )
@@ -390,11 +392,5 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   tft-rect
   r> tft-fill
 ;
-
-
-
-
-
-
 
 compiletoram
