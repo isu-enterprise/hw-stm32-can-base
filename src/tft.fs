@@ -255,7 +255,8 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
   $15 $17 2 $C0 tft! \ Power CTRL 1
   $41 1 $C1 tft! \ Pwr CTRL 2
   $80 $12 $00 3 $C5 tft! \ !VCOM CTRL
-  $48 1 $36 tft! \ Mem access control
+  $36 1 $36 tft! \ Mem access control \ default
+  \ $48 1 $36 tft! \ Mem access control
   \ $55 1 $3A tft! \ 16bit/Pixel interface format ||
   $66 1 $3A tft! \ 18bit/Pixel interface format ||
   $00 1 $B0 tft! \ Interface mode control
@@ -267,8 +268,8 @@ true variable TI.DR  \ Mode for Data Register. false - write, true - read
 
   \ tft-win-max
 
-  0 $21 tft! \ Display Inversion ON
-  \ 0 $20 tft! \ Display Inversion OFF
+  \ 0 $21 tft! \ Display Inversion ON
+  0 $20 tft! \ Display Inversion OFF
 
   0 $11 tft! \ Sleep out
   50000 0 do loop
