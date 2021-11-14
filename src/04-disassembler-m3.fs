@@ -128,9 +128,6 @@ compiletoflash
   endcase
 ;
 
-: rotateleft  ( x u -- x ) 0 ?do rol loop ;
-: rotateright ( x u -- x ) 0 ?do ror loop ;
-
 : imm12. ( Opcode -- Opcode )
   dup $FF and                 \ Bits 0-7
   over  4 rshift $700 and or  \ Bits 8-10
@@ -147,7 +144,7 @@ compiletoflash
     swap
       \ Otherwise, the 32-bit constant is rotated left until the most significant bit is bit[7]. The size of the left
       \ rotation is encoded in bits[11:7], overwriting bit[7]. imm12 is bits[11:0] of the result.
-      dup 7 rshift swap $7F and $80 or swap rotateright const.
+      dup 7 rshift swap $7F and $80 or swap rrotate const.
   endcase
 ;
 
@@ -229,8 +226,6 @@ compiletoflash
 
   case \ Decode remaining "singular" opcodes used in Mecrisp-Stellaris:
 
-    $EA5F0676 of ." rors r6 r6 #1" endof
-
     $F8470D04 of ." str r0 [ r7 #-4 ]!" endof
     $F8471D04 of ." str r1 [ r7 #-4 ]!" endof
     $F8472D04 of ." str r2 [ r7 #-4 ]!" endof
@@ -287,7 +282,7 @@ $D000 $F000 opcode? not if else dup $0F00 and 8 rshift       \ B(1) conditional 
                          $0C of ." bgt" endof  \ Z==0 and N == V
                          $0D of ." ble" endof  \ Z==1 or N != V
                          \ $0E: Undefined Instruction
-                         \ $0F: SWI
+                         $0F of ." swi"  0 imm8.   drop exit endof
                        endcase
                        space
                        dup $FF and dup $80 and if $FFFFFF00 or then
@@ -355,7 +350,6 @@ $BA40 $FFC0 opcode? if ." rev16" 0 reg. 3 reg. then         \ REV16
 $BAC0 $FFC0 opcode? if ." revsh" 0 reg. 3 reg. then         \ REVSH
 $41C0 $FFC0 opcode? if ." rors"  0 reg. 3 reg. then         \ ROR
 $4180 $FFC0 opcode? if ." sbcs"  0 reg. 3 reg. then         \ SBC
-$B650 $FFF7 opcode? if ." setend" then                      \ SETEND
 
 $C000 $F800 opcode? if ." stmia" 8 reg. ."  {" registerlist. ." }" then     \ STMIA
 
@@ -374,7 +368,6 @@ $3800 $F800 opcode? if ." subs" 8 reg. 0 imm8. then          \ SUB(2)
 $1A00 $FE00 opcode? if ." subs" 0 reg. 3 reg. 6 reg. then    \ SUB(3)
 $B080 $FF80 opcode? if ." sub sp" 0 imm7<<2. then            \ SUB(4)
 
-$DF00 $FF00 opcode? if ." swi"  0 imm8. then                 \ SWI
 $B240 $FFC0 opcode? if ." sxtb" 0 reg. 3 reg. then           \ SXTB
 $B200 $FFC0 opcode? if ." sxth" 0 reg. 3 reg. then           \ SXTH
 $4200 $FFC0 opcode? if ." tst"  0 reg. 3 reg. then           \ TST

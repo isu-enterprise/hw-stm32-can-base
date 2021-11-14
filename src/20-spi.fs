@@ -26,7 +26,7 @@
 
 compiletoflash
 
-\ USES 00-mmap.fs
+\ USES 10-mmap.fs
 
 \ RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE) ?
 
