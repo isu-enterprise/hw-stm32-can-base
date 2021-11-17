@@ -47,3 +47,5 @@ Old Philips projector control module
 ### Useful docs
 
 https://tuxotronic.org/post/mecrisp-forth/  (Loading programs via ```folie```)
+https://github.com/juju2013/folie - folie
+
