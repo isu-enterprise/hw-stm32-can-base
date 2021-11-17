@@ -1,9 +1,10 @@
-# phictrl
+# hw-cardio-nec
+My project of two subprojects implemented in Mecrisp FORTH.
+
+## phictrl
 Old Philips projector control module
 
-
-
-## Распределение периферии по портам/пинам.
+## Распределение периферии по портам/пинам. CARDIO
 
 ### Светодиод на отладочной плате (LED) - отладка алгоритмов.
 
@@ -29,7 +30,7 @@ Old Philips projector control module
 
  - SPI2 CS/SCK/MISO/MOSI : PB12/PB13/PB14/PB15
 
-### Обмен с Orenge PI, SPI2 или UART1
+### Обмен с Orange PI, SPI2 или UART1
 
  - SPI2 CS/SCK/MISO/MOSI : PAPB12/PB13/PB14/PB15
  - UART2 TX/RX : PA9/PA10 или PB6/PB7
@@ -41,3 +42,8 @@ Old Philips projector control module
  - I2C1 PB7,PB6
 
  - CS=PB10, RS=PB2, WR=PB1, RD=PB0, RST->RESET
+
+
+### Useful docs
+
+https://tuxotronic.org/post/mecrisp-forth/  (Loading programs via ```folie```)

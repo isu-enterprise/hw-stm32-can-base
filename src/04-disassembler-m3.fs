@@ -9,7 +9,8 @@
 \  A quick list of words
 \ ------------------------
 
-compiletoflash
+\ compiletoflash
+compiletoram
 
 : list ( -- )
   cr

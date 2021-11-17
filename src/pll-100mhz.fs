@@ -22,7 +22,7 @@ USART2 $8 + constant USART2_BRR
 
 : 100MHz ( -- )
 HSEON RCC_CR bis!
-begin HSERDY RCC_CR bit@ until
+begin ." HSERDY " HSERDY RCC_CR bit@ until
   \ Set Flash waitstates !
   $104 Flash_ACR !   \ 3 Waitstates for 120 MHz with more than 2.7 V Vcc, Prefetch buffer enabled.
 
@@ -38,20 +38,21 @@ begin HSERDY RCC_CR bit@ until
 
   0 16 lshift or  \ PLLP Division factor for main system clock
                   \ 0: /2  1: /4  2: /6  3: /8
-                  \ 100 MHz / 2 = 100 MHz 
+                  \ 200 MHz / 2 = 100 MHz 
   RCC_PLLCFGR !
 
   PLLON RCC_CR bis!
     \ Wait for PLL to lock:
-    begin PLLRDY RCC_CR bit@ until
+    begin ." PLLRDY " PLLRDY RCC_CR bit@ until
 
   2                 \ Set PLL as clock source
   %101 10 lshift or \ APB  Low speed prescaler (APB1) - Max 42 MHz ! Here 100/4 MHz = 25 MHz.
-  %100 13 lshift or \ APB High speed prescaler (APB2) - Max 90 MHz ! Here 120/2 MHz = 50 MHz.
+  %100 13 lshift or \ APB High speed prescaler (APB2) - Max 90 MHz ! Here 100/2 MHz = 50 MHz.
   RCC_CFGR !
 
   \ $d9  USART2_BRR ! \ Set Baud rate divider for 115200 Baud at 25 MHz.
-  $6c8  USART2_BRR ! \ Set Baud rate divider for 115200 Baud at 100 MHz.
+  \ $1b1  USART2_BRR ! \ Set Baud rate divider (27.1267) for 115200 Baud at 25 MHz.
+  $364  USART2_BRR ! \ Set Baud rate divider (27.1267) for 115200 Baud at 25 MHz.
 ;
 : init100 100mhz cr ." Freq: 100 MHz" cr ;
 compiletoram
