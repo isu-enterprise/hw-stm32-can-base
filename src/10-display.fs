@@ -1,7 +1,11 @@
-\ Program Name: 1b.fs  for Mecrisp-Stellaris by Matthias Koch and licensed under the GPL
-\ Copyright 2019 t.porter <terry@tjporter.com.au> and licensed under the BSD license.
-\ This program must be loaded before memmap.fs as it provided the pretty printing legend for generic 32 bit prints
-\ Also included is "bin." which prints the binary form of a number with no spaces between numbers for easy copy and pasting purposes
+\ Program Name: 1b.fs  for Mecrisp-Stellaris by Matthias Koch 
+\ and licensed under the GPL
+\ Copyright 2019 t.porter <terry@tjporter.com.au> and licensed
+\ under the BSD license.
+\ This program must be loaded before memmap.fs as it 
+\ provided the pretty printing legend for generic 32 bit prints
+\ Also included is "bin." which prints the binary form of 
+\ a number with no spaces between numbers for easy copy and pasting purposes
 
 \ compiletoram
 
