@@ -1,3 +1,4 @@
+\ compiletoram
 compiletoflash
 
 \ forgetram
@@ -193,20 +194,33 @@ $40021C00 constant GPIOH ( General-purpose I/Os )
   swap GPIO.BSRR !
 ;
 
+$40004400 constant USART2
+: USART.BRR $8 + ;
 
+$40023C00 constant FLASH.ACR \ Flash Access Control Register
 $40023800 constant RCC ( Reset and clock control )
 
+: RCC.CR ;
+: RCC.PLLCFGR $4 + ;
+: RCC.CFGR $8 + ;
 : RCC.AHB1LPENR ( RCCa -- RCC_AHB1LPENRa) $50 + ; ( AHB1 peripheral clock enable in low power mode register )
 : RCC.AHB1ENR ( RCCa -- RCC_AHB1ENRa) $30 + ; ( AHB1 peripheral clock enable register )
 : RCC.APB1ENR ( RCCa -- RCC_AHB1ENRa) $40 + ; ( APB1 peripheral clock enable register )
 : RCC.APB2ENR ( RCCa -- RCC_AHB2ENRa) $44 + ; ( APB2 peripheral clock enable register )
 
+: RCC.CR. ." RCC.CR (read-write) $" RCC RCC.CR @1b. ;
+: RCC.PLLCFGR. ." RCC.PLLCFGR (read-write) $" RCC RCC.PLLCFGR @1b. ;
+: RCC.CFGR. ." RCC.CFGR (read-write) $" RCC RCC.CFGR @1b. ;
 : RCC.AHB1LPENR. ." RCC.AHB1LPENR (read-write) $" RCC RCC.AHB1LPENR @1b. ;
 : RCC.AHB1ENR. ." RCC.AHB1ENR (read-write) $" RCC RCC.AHB1ENR @1b. ;
 : RCC.APB1ENR. ." RCC.APB1ENR (read-write) $" RCC RCC.APB1ENR @1b. ;
 : RCC.APB2ENR. ." RCC.APB2ENR (read-write) $" RCC RCC.APB2ENR @1b. ;
+
 : RCC.
   \ RCC.AHB1LPENR.
+  RCC.CR.
+  RCC.PLLCFGR.
+  RCC.CFGR.
   RCC.AHB1ENR.
   RCC.APB1ENR.
   RCC.APB2ENR.
