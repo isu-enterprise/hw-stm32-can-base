@@ -1,7 +1,7 @@
 
-compiletoram
-forgetram
-\ compiletoflash
+\ compiletoram
+\ forgetram
+compiletoflash
 
 \ Controlling MCP23S17 over SPI3
 \ USES mcp.fs

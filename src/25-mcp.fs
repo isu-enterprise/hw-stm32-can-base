@@ -6,6 +6,13 @@ compiletoflash
 \ Controlling MCP23S17 over SPI3
 \ USES spi.fs
 
+\ PA0  resets mmc \_____/
+\ PA15, PB3, PB4, PB5 are SPI3. AF = 6
+\ PA15 NSS \_____/ 
+\ PB3  SCLK
+\ PB4  MISO (MAster IN)
+\ PB5  MOSI (Master Out)
+
 GPIOA constant MCP.PORT
 0  constant MCP.RESET.PIN \ PA0
 $f constant MCP.NSS.PIN   \ PA15
