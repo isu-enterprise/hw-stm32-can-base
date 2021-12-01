@@ -50,6 +50,16 @@ forgetram
   50000 0 do loop
 ;
 
+: tft-full-rect ( -- )
+  319 0 479 0 tft-rect \ 153600 pixels
+;
+
+: tft-bkg ( B G R -- ) \ Fill background wit a color
+  tft-full-rect
+  320 480 *
+  tft-fill
+;
+
 \ MY MX MV ML BGR MH X X
 \ 0  1  0  0   1  1  0 0
 : tft-ma-portrait ( -- )
@@ -180,18 +190,18 @@ forgetram
     drop
     exit
   then
-  32 -
+  32 -  \ Latin char
   TFT.CUR.Y @
   TFT.CUR.X @
   tft-glyph
   TFT.CUR.X @ FONT.WIDTH +
   TFT.CUR.X !
-  TFT.CUR.X @ 304 > if
+  TFT.CUR.X @ 463 > if
     TFT.CUR.Y @ FONT.HEIGHT +
     TFT.CUR.Y !
     0 TFT.CUR.X !
   then
-  TFT.CUR.Y @ 450 > if
+  TFT.CUR.Y @ 289 > if
     0 TFT.CUR.Y !
     0 TFT.CUR.X !
   then
@@ -262,6 +272,10 @@ forgetram
     32 -
     tft-char-con
   again
+;
+
+: tcon ( -- ) \ test console
+  tft-type-con
 ;
 
 compiletoram
