@@ -52,6 +52,17 @@ compiletoflash
   then
 ;
 
+: rcc-spi2-enable! ( bool -- )
+  RCC RCC.APB1ENR swap \ addr bool
+  1 14 lshift \ addr bool mask
+  -rot \ mask addr bool
+  if
+    bis!
+  else
+    bic!
+  then
+;
+
 
 : spi-txe? ( SPIa -- T/F ) \ Is transmit buffer empty ?
   SPI.SR %1 1 lshift swap bit@
