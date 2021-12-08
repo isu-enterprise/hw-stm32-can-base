@@ -23,6 +23,6 @@ api.add_resource(TodoSimple, '/todos/<string:todo_id>')
 
 if __name__ == '__main__':
     spi.connect()
-    app.run(debug=True)
+    app.run(debug=True, host="192.168.22.4")
     spi.disconnect()
 
