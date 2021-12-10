@@ -182,7 +182,7 @@ forgetram
 0 variable TFT.CUR.X
 0 variable TFT.CUR.Y
 
-: tft-char ( u -- )
+: tft-emit ( u -- )
   dup 13 = if \ cr
     TFT.CUR.Y @ FONT.HEIGHT +
     TFT.CUR.Y !
@@ -225,7 +225,7 @@ forgetram
   ." Type, ESC - exit:" cr
   begin
     key dup 27 = if drop exit then
-    tft-char
+    tft-emit
   again
 ;
 
@@ -261,6 +261,27 @@ forgetram
   loop
 ;
 
+: tft-type ( c-addr length -- ) \ Typeout string to tft
+  0 ?do
+    dup c@ tft-emit
+    1+
+  loop
+  drop
+;
+
+: tft-locate ( y x -- ) \ Locate cursor on TFT
+  FONT.WIDTH * TFT.CUR.X !
+  FONT.HEIGHT * TFT.CUR.Y !
+;
+
+4 480 * constant CBUF.M
+0 variable CBUF.L
+create CBUF CBUF.M allot
+
+: tft-accept ( -- )
+  CBUF CBUF.M accept
+  CBUF.L !
+;
 
 : tft-type-con
   begin
@@ -277,5 +298,9 @@ forgetram
 : tcon ( -- ) \ test console
   tft-type-con
 ;
+
+
+
+
 
 compiletoram
