@@ -50,13 +50,16 @@ forgetram
   50000 0 do loop
 ;
 
+480 constant TFT.SCR.W
+320 constant TFT.SCR.H
+
 : tft-full-rect ( -- )
-  319 0 479 0 tft-rect \ 153600 pixels
+  TFT.SCR.H 1- 0 TFT.SCR.W 1- 0 tft-rect \ 153600 pixels
 ;
 
 : tft-bkg ( B G R -- ) \ Fill background wit a color
   tft-full-rect
-  320 480 *
+  TFT.SCR.H TFT.SCR.W *
   tft-fill
 ;
 
@@ -157,6 +160,10 @@ forgetram
   \ ." |"
 ;
 
+: tft-draw-start# \ Send command to accept pixel data
+  0 $2C tft-pre! \ Start write glyph
+;
+
 : tft-glyph ( u y x -- ) \ draws glyph form table
   \ .s cr
   dup FONT.WIDTH + 1- swap
@@ -169,7 +176,7 @@ forgetram
   1 lshift
   font16x30 + \ addr
   \ h.s cr
-  0 $2C tft-pre! \ Start write glyph
+  tft-draw-start#
   \ h.s cr
   FONT.HEIGHT 0 do
     \ dup h@
@@ -279,7 +286,7 @@ forgetram
 ;
 
 \ 4 bytes per 30 pixels of mono
-4 480 * constant CBUF.M
+4 TFT.SCR.W * constant CBUF.M
 0 variable CBUF.L
 create CBUF CBUF.M allot
 
@@ -303,6 +310,8 @@ create CBUF CBUF.M allot
   \ Draw 4-byte, 30 pixel vertical bar at x,y
   dup tft-def-x
   dup 29 + swap tft-def-y
+  tft-fini!
+  tft-draw-start#
   @
   tft-bar-draw#
   tft-fini!
@@ -313,11 +322,22 @@ create CBUF CBUF.M allot
   \ at the cursor. Cursor does not move
   \ highest bit highest position on the screen
   0 ?do
-    dup TFT.CUR.Y TFT.CUR.X i + tft-bar-draw
+    dup TFT.CUR.Y @ TFT.CUR.X @ i + tft-bar-draw
     4 + \ shift to 4 bytes the abuf
   loop
   drop \ abuf
 ;
+
+: cbuf-fill ( -- )
+  1 CBUF
+  TFT.SCR.W 0 do
+    2dup !
+    4 + swap rol swap
+  loop
+  2drop
+;
+
+
 
 \ DEBUGGING FOR FONT OUTPUT
 
