@@ -1,5 +1,6 @@
 from flask import Flask, request
 from flask_restful import Resource, Api
+from werkzeug.datastructures import ImmutableMultiDict
 import spi
 import serial
 import time
@@ -15,15 +16,14 @@ api = Api(app)
 todos = {}
 
 
-class ForthH3(Resource):
-    def post(self):
-        json_data=request.get_json(force=True)
-        cmd=json_data['command']
-        cmd=cmd.rstrip('\n\r')
-        cmd=cmd.rstrip('\r\n')
-        cmd=cmd.rstrip('\n')
-        cmd=cmd.rstrip('\r')
-        cmd=cmd.encode('utf8')
+class ForthResource(Resource):
+    def send(self, cmd):
+        if type(cmd)==str:
+            cmd=cmd.encode('utf8')
+        cmd=cmd.rstrip(b'\n\r')
+        cmd=cmd.rstrip(b'\r\n')
+        cmd=cmd.rstrip(b'\n')
+        cmd=cmd.rstrip(b'\r')
         SER.write(cmd+b'\r')
         time.sleep(DELAY/1000)
         l=SER.readline().decode('utf8')
@@ -45,6 +45,34 @@ class ForthH3(Resource):
             rc='KO'
             error='UNKNOWN'
         return {'line':l, 'answer':a, 'rc':rc, 'error':error}
+        
+
+class ForthH3(ForthResource):
+    def post(self):
+        json_data=request.get_json(force=True)
+        cmd=json_data['command']
+        return self.send(cmd)
+        
+
+class ForthFileLoader(ForthResource):
+    def post(self):
+        content=request.files['content']
+        name=request.form['filename']
+        print('loading', name)
+        print('here')
+        list=[]
+        rc='OK'
+        for l in content:
+            l=l.rstrip(b'\n')
+            print(l.decode('utf-8'))
+            rcl=self.send(l)
+            list.append(rcl)
+            if rcl['rc']=='KO':
+                rc='KO'
+                break
+            time.sleep(40/1000)
+        error='NO ERROR'
+        return {'rc':rc, 'list':list, 'error':error}
 
 class Screen(Resource):
     pass
@@ -68,6 +96,7 @@ class TodoSimple(Resource):
 
 api.add_resource(TodoSimple, '/todos/<string:todo_id>')
 api.add_resource(H3Connection,  '/h3/spi')
+api.add_resource(ForthFileLoader,  '/h3/forth/loader')
 api.add_resource(ForthH3,  '/h3/forth')
 
 if __name__ == '__main__':
