@@ -137,17 +137,21 @@ forgetram
   TFT.B.R @
 ;
 
-: tft-gl ( u -- ) \ emits scan line to TFT
+: tft-pixel#! ( bool -- ) \ true - fore color pixel, false elsewhere.
+  if
+    tft-f@
+    \ space
+  else
+    tft-b@
+    \ 35 emit
+  then
+  3 tft-data!
+;
+
+: tft-gl# ( u -- ) \ emits scan line to TFT
   16 0 do
     dup %1000000000000000 i rshift and 0 >
-    if
-      tft-f@
-      \ space
-    else
-      tft-b@
-      \ 35 emit
-    then
-    3 tft-data!
+    tft-pixel#!
   loop
   drop
   \ ." |"
@@ -172,7 +176,7 @@ forgetram
     \ dup bin.
     dup i 2* + h@
     \ dub b16sloop. cr
-    tft-gl
+    tft-gl#
     \ 2+
   loop
   drop
@@ -219,7 +223,6 @@ forgetram
 ;
 
 : t-t
-  tft-clear
   255 255 255 tft-b!
   0   0   255 tft-f!
   ." Type, ESC - exit:" cr
@@ -231,6 +234,7 @@ forgetram
 
 : t
   t-i
+  tft-clear
   t-t
 ;
 
@@ -274,6 +278,7 @@ forgetram
   FONT.HEIGHT * TFT.CUR.Y !
 ;
 
+\ 4 bytes per 30 pixels of mono
 4 480 * constant CBUF.M
 0 variable CBUF.L
 create CBUF CBUF.M allot
@@ -282,6 +287,39 @@ create CBUF CBUF.M allot
   CBUF CBUF.M accept
   CBUF.L !
 ;
+
+1 29 lshift constant TFT.HI.BIT
+
+: tft-bar-draw# ( n -- )
+  \ Draw n highest bit - highest position
+  30 0 do
+    dup TFT.HI.BIT i rshift and 0 >
+    tft-pixel#!
+  loop
+  drop
+;
+
+: tft-bar-draw ( abuf y x -- )
+  \ Draw 4-byte, 30 pixel vertical bar at x,y
+  dup tft-def-x
+  dup 29 + swap tft-def-y
+  @
+  tft-bar-draw#
+  tft-fini!
+;
+
+: tft-buf-draw ( abuf n -- )
+  \ number of 30 bit pixel bars in abuf
+  \ at the cursor. Cursor does not move
+  \ highest bit highest position on the screen
+  0 ?do
+    dup TFT.CUR.Y TFT.CUR.X i + tft-bar-draw
+    4 + \ shift to 4 bytes the abuf
+  loop
+  drop \ abuf
+;
+
+\ DEBUGGING FOR FONT OUTPUT
 
 : tft-type-con
   begin
