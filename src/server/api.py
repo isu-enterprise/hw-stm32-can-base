@@ -79,15 +79,17 @@ class ForthFileLoader(ForthResource):
             l = l.rstrip(b'\n')
             print(ln, ':', l.decode('utf-8'))
             rcl = self.send(l)
+            rcl['l']=ln
             list.append(rcl)
             if rcl['rc'] == 'KO':
                 rc = 'KO'
                 fln = ln
+                error=rcl['error']
                 break
             # time.sleep(40/1000)
             ln += 1
         error = 'NO ERROR'
-        return {'rc': rc, 'list': list, 'error': error, 'l': fln}
+        return {'rc': rc, 'list': list, 'error': error, 'error-l': fln}
 
 
 class Screen(Resource):
