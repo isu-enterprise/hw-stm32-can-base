@@ -1,3 +1,4 @@
 spidev
 flask-restful
 pyserial
+Pillow
