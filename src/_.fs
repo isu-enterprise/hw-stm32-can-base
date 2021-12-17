@@ -321,23 +321,33 @@ create CBUF CBUF.M allot
   \ number of 30 bit pixel bars in abuf
   \ at the cursor. Cursor does not move
   \ highest bit highest position on the screen
-  0 ?do
+  dup -rot  \ n abuf n
+  0 ?do  \ n abuf
     dup TFT.CUR.Y @ TFT.CUR.X @ i + tft-bar-draw
     4 + \ shift to 4 bytes the abuf
-  loop
-  drop \ abuf
+  loop \ s: n abuf
+  drop \ s: n
+  TFT.CUR.X @ + \ b+cur.x
+  dup TFT.SCR.W 1- > if
+    drop
+    0 TFT.CUR.X !
+    TFT.CUR.Y @ 1+ TFT.CUR.Y !
+    \ TODO: Check TFT.CUR.Y out of screen
+  else
+    TFT.CUR.X !
+  then
 ;
 
 : cbuf-fill ( -- )
   1 CBUF
   TFT.SCR.W 0 do
-    2dup !
-    4 + swap rol swap
+    2dup \ 1 CBUF 1 CBUF
+    !
+    4 + swap \ CBUF 1
+    rol swap \ %10 CBUF
   loop
   2drop
 ;
-
-
 
 \ DEBUGGING FOR FONT OUTPUT
 
@@ -356,9 +366,6 @@ create CBUF CBUF.M allot
 : tcon ( -- ) \ test console
   tft-type-con
 ;
-
-
-
 
 
 compiletoram

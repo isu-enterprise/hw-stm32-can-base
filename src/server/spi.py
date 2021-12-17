@@ -1,14 +1,17 @@
 import spidev
 
-st=None
+st = None
+
 
 def connect():
     global st
     st = spidev.SpiDev(0, 0)
 
+
 def disconnect():
     global st
     st.close()
+
 
 def tranfer_test():
     global st
@@ -22,3 +25,4 @@ if __name__=='__main__':
     connect()
     transfer_test()
     disconnect()
+    # 00000001  00000008  00000001  000000FF  000000F0
