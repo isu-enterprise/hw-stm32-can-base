@@ -5,7 +5,7 @@
 
 \ 2020-07-13
 
-forgetram
+\ forgetram
 
 \ compiletoflash
 compiletoram
@@ -152,19 +152,29 @@ GPIOB constant GPIO.SPI2
 ;
 
 \ Temporal buffer
-create CBUF 1024 allot
+\ create CBUF 1024 allot
 
 : h3-buf-receive ( abuf n -- )
   \ Receive n bytes via SPI2 into abuf
   0 ?do
     begin
-    h3? until
-    h3@ \ abuf val
-    over \ abuf val abuf
-    !
-    1+
+      h3? key? or until
+    h3? if
+      h3@ \ abuf val
+      over \ abuf val abuf
+      !
+      1+
+    else
+      ." Break at " i . cr
+      leave
+    then
   loop
   drop \ abuf
+;
+
+: h3-buf-recv ( abuf n -- )
+  space ." recv." cr
+  h3-buf-receive
 ;
 
 : h3-buf. ( abuf n -- )

@@ -1,7 +1,7 @@
 \ Uses
 
 compiletoram
-forgetram
+\ forgetram
 
 : tft-init
   ti-init
