@@ -23,7 +23,7 @@ def as_binary(n):
             c <<= 1
             if pic.getpixel((x, y)) == 0:
                 c |= 1
-        bb = c.to_bytes(4, byteorder='big')
+        bb = c.to_bytes(4, byteorder='little')
         for b in bb:
             yield b
 

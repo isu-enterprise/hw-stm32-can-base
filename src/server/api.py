@@ -14,8 +14,6 @@ SER_TIMEOUT = 20  # Seconds
 app = Flask(__name__)
 api = Api(app)
 
-todos = {}
-
 
 class ForthResource(Resource):
     def send(self, cmd):
@@ -106,12 +104,12 @@ class ForthFileLoader(ForthResource):
             l = l.rstrip(b'\n')
             print(ln, ':', l.decode('utf-8'))
             rcl = self.send(l)
-            rcl['l']=ln
+            rcl['l'] = ln
             list.append(rcl)
             if rcl['rc'] == 'KO':
                 rc = 'KO'
                 fln = ln
-                error=rcl['error']
+                error = rcl['error']
                 break
             # time.sleep(40/1000)
             ln += 1
@@ -136,19 +134,13 @@ class H3Control(Resource):
         }
 
 
-class TodoSimple(Resource):
-    def get(self, todo_id):
-        return {todo_id: todos[todo_id]}
-
-    def put(self, todo_id):
-        todos[todo_id] = request.form['data']
-        return {todo_id: todos[todo_id]}
-
-
-api.add_resource(TodoSimple, '/todos/<string:todo_id>')
+# Control of Flask server API (shutdown)
 api.add_resource(H3Control, '/h3/control')
+# Sending bytes/string to SPI
 api.add_resource(H3Connection, '/h3/spi')
+# File/firmware uploader
 api.add_resource(ForthFileLoader, '/h3/forth/loader')
+# Running commands via /dev/ttyS1
 api.add_resource(ForthH3, '/h3/forth')
 
 if __name__ == '__main__':
