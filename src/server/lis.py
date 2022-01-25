@@ -1,7 +1,8 @@
 import requests as req
 import pics
 
-SERVER = "http://192.168.22.4:5000/"
+# SERVER = "http://192.168.22.4:5000/"
+SERVER = "http://192.168.0.114:5000/"
 H3 = SERVER+'h3/'
 SPI = H3+'spi'
 

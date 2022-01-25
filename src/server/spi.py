@@ -1,7 +1,7 @@
 import spidev
 
 st = None
-
+SPEED=100000
 
 def connect():
     global st
@@ -12,6 +12,10 @@ def disconnect():
     global st
     st.close()
 
+
+def transfer(abytearray):
+    global st
+    return st.xfer(abytearray, SPEED, 0, 8)
 
 def tranfer_test():
     global st

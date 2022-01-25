@@ -33,6 +33,9 @@ class ForthResource(Resource):
         if a.endswith(' ok.'):
             rc = 'OK'
             a = a.rstrip(' ok.')
+        elif a.endswith(' recv.'):
+            rc = 'RECV'
+            a = a.rstrip(' recv.')
         elif (a.endswith(' not found.')):
             a = a.rstrip(' not found.')
             error = 'NOT FOUND'
@@ -55,14 +58,38 @@ class ForthH3(ForthResource):
         return self.send(cmd)
 
 
-class H3Connection(Resource):
+class H3Connection(ForthResource):
+    def spisend(self, abytesarray):
+        n=len(abytesarray)
+        rc=self.send('CBUF {} h3-buf-recv '.format(n))
+        print('After send-recv:', rc)
+        if rc['rc']=='RECV':
+            print('Sending', abytesarray)
+            newbytes=spi.transfer(abytesarray)
+            ok=SER.readline().decode('utf8')
+            print('Srumble:',ok)
+            print('NewBytes:', newbytes)
+        elif rc['rc']=='KO':
+            return rc
+        return {'rc':'OK', 'error':0, 'answer': 'SOMETHING'}
+        
     def post(self):
         json_data = request.get_json(force=True)
         typ = json_data['type']
         msg = json_data['message']
-        print('Received', typ, msg)
+        print('Received type:"{}" data:{}'.format(typ, repr(msg)))
         # spi.tranfer_test()
-        return {'rc': 'OK', 'error': 0, 'answer': 'SOMETHING FROM SPIDEV'}
+        error=0
+        if typ=='str':
+            msg=msg.encode('utf-8')
+            return self.spisend(msg)
+        if typ=='bytes':
+            return self.spisend(msg)
+        answer='NO SUPPORT THIS TYPE'
+        error=answer
+        # if answer is None:
+        #     answer=''
+        return {'rc': 'OK', 'error': error, 'answer': answer}
 
 
 class ForthFileLoader(ForthResource):
@@ -127,6 +154,7 @@ api.add_resource(ForthH3, '/h3/forth')
 if __name__ == '__main__':
     spi.connect()
     SER = serial.Serial(TTY, 115200, timeout=SER_TIMEOUT)
-    app.run(debug=True, host="192.168.22.4")
+    # app.run(debug=True, host="192.168.22.4")
+    app.run(debug=True, host="192.168.0.114")
     spi.disconnect()
     SER.close()
