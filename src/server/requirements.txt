@@ -1,5 +1,0 @@
-spidev
-flask-restful
-pyserial
-Pillow
-requests
