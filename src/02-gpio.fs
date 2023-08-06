@@ -1,4 +1,5 @@
 \ compiletoflash
+\ Uses 01-display.fs
 
 compiletoram
 forgetram
@@ -11,13 +12,13 @@ $40011000 constant GPIOC
 \ $40011C00 constant GPIOF
 \ $40012000 constant GPIOG
 
-: GPIO.CRL ( addr -- addr ) ;
-: GPIO.CRH ( n -- n ) $04 + ;
-: GPIO.IDR ( n -- n ) $08 + ;
-: GPIO.ODR ( n -- n ) $0C + ;
-: GPIO.BSRR ( n -- n ) $10 + ;
-: GPIO.BRR ( n -- n ) $14 + ;
-: GPIO.LCKR ( n -- n ) $18 + ;
+: GPIO.CRL ( addr -- addr ) inline ;
+: GPIO.CRH ( n -- n ) $04 + inline ;
+: GPIO.IDR ( n -- n ) $08 + inline ;
+: GPIO.ODR ( n -- n ) $0C + inline ;
+: GPIO.BSRR ( n -- n ) $10 + inline ;
+: GPIO.BRR ( n -- n ) $14 + inline ;
+: GPIO.LCKR ( n -- n ) $18 + inline ;
 
 : GPIO.CRL. ( addr -- )
   GPIO.CRL CRb.
@@ -48,23 +49,46 @@ $40011000 constant GPIOC
   swap bis!
 ;
 
-: gpio@ ( addr -- n ) \ reads 32 bit state of all pins
+: gpio-in@ ( addr -- n ) \ reads 32 bit state of all pins
   GPIO.IDR @
+  inline
+;
+
+: gpio-out@ ( addr -- n ) \ reads 32 bit state of all pins
+  GPIO.ODR @
+  inline
 ;
 
 : pin-lshift$ ( pin n -- mask ) \ Shifts n into pin's position
   swap lshift
+  inline
 ;
 
-: gpio-pin@ ( addr pin -- Flag ) \ Reads pin
+
+: and? ( n mask - flag ) \ make and and check any 1-s
+  and 0<>
+  inline
+;
+
+: gpio-in-pin@ ( addr pin -- Flag ) \ Reads input pin
   1 pin-lshift$
   swap
-  gpio@ \ mask GPIO.IDR-val
-  or 0<>
+  gpio-in@ \ mask GPIO.IDR-val
+  and?
+  inline
+;
+
+: gpio-out-pin@ ( addr pin -- Flag ) \ Reads input pin
+  1 pin-lshift$
+  swap
+  gpio-out@ \ mask GPIO.IDR-val
+  and?
+  inline
 ;
 
 : gpio! ( n addr -- ) \ Stores 32 bit state to all pins
   GPIO.ODR !
+  inline
 ;
 
 : gpio-pin! ( Flag addr pin -- ) \ If flag==true sets pin high, otherwise low
