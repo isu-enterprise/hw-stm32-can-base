@@ -1,12 +1,15 @@
 \ Uses 02-gpio.fs
 
 compiletoram
-: led-addr GPIOC inline ;
-: led led-addr 13 inline ;
+: LED-ADDR GPIOC inline ;
+: led LED-ADDR 13 inline ;
 
 
 : led-setup
-  led %01 %00 gpio-setup \ %01=Output 10Mhz, %00-Push-pull
+  %01 led gpio-pin-moder!
+  %0  led gpio-pin-otyper!
+  %00 led gpio-pin-ospeedr!
+  %00 led gpio-pin-pupdr!
 ;
 
 : led-on?
@@ -23,6 +26,10 @@ compiletoram
   inline
 ;
 
+: led-off
+  led gpio-pin-s!
+;
+
 : led-test
   led-setup
   cr
@@ -33,4 +40,5 @@ compiletoram
     led-delay
     key?
   until
+  led-off
 ;
