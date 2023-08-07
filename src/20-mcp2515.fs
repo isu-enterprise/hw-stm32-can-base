@@ -2,11 +2,13 @@
 compiletoram
 \ forgetram
 
-: MCP-NSS GPIOA 12 inline ; \ GPIOA12, PA12
+: MCP-NSS GPIOA 15 inline ;
 : MCP-SPI GPIOB inline ;
 : MCP-MOSI MCP-SPI 5 inline ;
 : MCP-MISO MCP-SPI 4 inline ;
 : MCP-SCK MCP-SPI 3 inline ;
+: MCP-INT GPIOA 12 inline ;
+
 
 $40010000 constant AFIO
 
