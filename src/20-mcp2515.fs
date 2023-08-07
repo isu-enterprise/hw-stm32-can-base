@@ -22,9 +22,9 @@ $40010000 constant AFIO
   RCC.APB2ENR.
   ." remap AFIO.MAPR (0 bit)"
   AFIO.
-  ." nss GPIO A (PA15)"
-  GPIOA GPIO.CRL.
-  ." spi1 GPIO B (PB3-PB5)"
+  ." nss  GPIOA GPIO.CRH. (PA15)"
+  GPIOA GPIO.CRH.
+  ." spi1 GPIOB GPIO.CRL. (PB3-PB5)"
   GPIOB GPIO.CRL.
   ." SPI1 registers"
   SPI1 SPI.
@@ -46,6 +46,7 @@ $40010000 constant AFIO
 : mcp-init
   spi-init
   \ Software control on NSS
+  \       mode conf
   MCP-NSS %01 %00 gpio-setup \ 10 Mhz, Output
   MCP-SCK %01 %10 gpio-setup \ Output, AF
   MCP-MISO %00 %10 gpio-setup \ Input, AF
