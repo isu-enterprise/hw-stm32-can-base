@@ -1,44 +1,53 @@
 \ System setup, clock, subsys clocking, etc.
 \ Uses 01-display.fs
 
-\ compiletoram
 forgetram
+\ compiletoram
+
 compiletoflash
 
-$40021000 constant RCC
+$40023800 constant RCC
 
 : RCC.CR inline ;         \ Clock control register (RCC_CR)
-: RCC.CFGR $04 + inline ; \ Clock configuration register (RCC_CFGR)
-: RCC.CIR $08 + inline ;  \ Clock interrupt register (RCC_CIR)
-: RCC.APB2RSTR $0C + inline ;  \ APB2 peripheral reset register (RCC_APB2RSTR)
-: RCC.APB1RSTR $10 + inline ;  \ APB1 peripheral reset register (RCC_APB1RSTR)
-: RCC.AHBENR $14 + inline ;  \ AHB Peripheral Clock enable register (RCC_AHBENR)
-: RCC.APB2ENR $18 + inline ;  \ APB2 Peripheral Clock enable register (RCC_APB2ENR)
-: RCC.APB1ENR $1C + inline ;  \ APB1 Peripheral Clock enable register (RCC_APB1ENR)
-: RCC.BDCR $20 + inline ;  \ Backup domain control register (RCC_BDCR)
-: RCC.CSR $24 + inline ;  \ Control/status register (RCC_CSR)
-: RCC.AHBRSTR $28 + inline ;  \ AHB peripheral clock reset register (RCC_AHBRSTR)
-: RCC.CFGR2 $2C + inline ;  \ Clock configuration register2 (RCC_CFGR2)
+: RCC.PLLCFGR $04 + inline ;
+: RCC.CFGR $08 + inline ;
+: RCC.CIR $0C + inline ;
+: RCC.AHB1RSTR $10 + inline ;
+: RCC.AHB2RSTR $14 + inline ;
+: RCC.APB1RSTR $20 + inline ;
+: RCC.APB2RSTR $24 + inline ;
+: RCC.AHB1ENR $30 + inline ;
+: RCC.AHB2ENR $34 + inline ;
+: RCC.APB1ENR $40 + inline ;
+: RCC.APB2ENR $44 + inline ;
+: RCC.AHB1LPENR $50 + inline ;
+: RCC.AHB2LPENR $54 + inline ;
+: RCC.APB1LPENR $60 + inline ;
+: RCC.APB2LPENR $64 + inline ;
+: RCC.BDCR $70 + inline ;
+: RCC.CSR $74 + inline ;
+: RCC.SSCGR $80 + inline ;
+: RCC.PLLI2SCFGR $84 + inline ;
+: RCC.DCKCFGR $8C + inline ;
 
+\ : RCC.APB2RSTR.
+\   RCC RCC.APB2RSTR 1b.
+\ ;
 
-: RCC.APB2RSTR.
-  RCC RCC.APB2RSTR 1b.
-;
+\ : RCC.APB1RSTR.
+\   RCC RCC.APB1RSTR 1b.
+\ ;
 
-: RCC.APB1RSTR.
-  RCC RCC.APB1RSTR 1b.
-;
+\ : RCC.APB2ENR.
+\   RCC RCC.APB2ENR 1b.
+\ ;
 
-: RCC.APB2ENR.
-  RCC RCC.APB2ENR 1b.
-;
+\ : RCC.APB1ENR.
+\   RCC RCC.APB1ENR 1b.
+\ ;
 
-: RCC.APB1ENR.
-  RCC RCC.APB1ENR 1b.
-;
-
-: RCC.AHBENR.
-  RCC RCC.AHBENR 1b.
-;
+\ : RCC.AHBENR.
+\   RCC RCC.AHBENR 1b.
+\ ;
 
 compiletoram

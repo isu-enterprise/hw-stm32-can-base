@@ -3,9 +3,9 @@
 
 forgetram
 
-compiletoram
+\ compiletoram
 
-\ compiletoflash
+compiletoflash
 
 
 $40020000 constant GPIOA
@@ -109,6 +109,27 @@ $40020800 constant GPIOC
   bis!
 ;
 
+: gpio-pin-af! ( af addr pin -- )
+  dup
+  15 > if
+    16 -
+    swap
+    GPIO.AFRH
+  else
+    swap
+    GPIO.AFRL
+  then
+  \ af pin-localized addr.AH*
+  >r
+  2 lshift \ af position
+  r@
+  swap \ af addr.* pos
+  %1111 over lshift \ af addr pos clearmask
+  rot bic! \ af pos
+  lshift r> bis!
+;
+
+
 : gpio-in@ ( addr -- n ) \ reads 32 bit state of all pins
   GPIO.IDR @
   inline
@@ -172,4 +193,5 @@ $40020800 constant GPIOC
 
 
 \ Note, led on pin PC13 lights if its bit cleared
+
 compiletoram

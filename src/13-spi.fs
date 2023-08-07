@@ -8,11 +8,13 @@ compiletoram
 $40013000 constant SPI1
 $40003800 constant SPI2
 $40003C00 constant SPI3
+$40013400 constant SPI4
 
 : SPI.CR1 $00 + inline ; \ SPI control register 1 (\ SPI_CR1)
 : SPI.CR2 $04 + inline ; \ SPI control register 2 (\ SPI_CR2)
 : SPI.SR  $08 + inline ; \ SPI status register (\ SPI_SR)
 : SPI.DR  $0c + inline ; \ SPI data register (\ SPI_DR)
+: SPI.CRCPR $10 + inline ; \ SPI CRC polynomial register
 : SPI.RXCRCR $14 + inline ; \ SPI RX CRC register (\ SPI_RXCRCR)
 : SPI.TXCRCR $18 + inline ; \ SPI TX CRC register (\ SPI_TXCRCR)
 : SPI.I2SCFGR $1c + inline ; \ SPI_I2S configuration register (\ SPI_I2SCFGR)
@@ -63,15 +65,21 @@ $40003C00 constant SPI3
   bis?!
 ;
 
+: spi2-rcc-enable ( flag -- )
+  1 14 lshift
+  RCC RCC.APB1ENR
+  bis?!
+;
+
 : spi3-rcc-enable ( flag -- )
   1 15 lshift
   RCC RCC.APB1ENR
   bis?!
 ;
 
-: spi2-rcc-enable ( flag -- )
-  1 14 lshift
-  RCC RCC.APB1ENR
+: spi4-rcc-enable ( flag -- )
+  1 13 lshift
+  RCC RCC.APB2ENR
   bis?!
 ;
 
@@ -141,8 +149,8 @@ $40003C00 constant SPI3
   %000 spi-speed
 ;
 
-: spi-mid-speed ( SPIa -- ) \ !000 - average divider
-  %010 spi-speed
+: spi-middle-speed ( SPIa -- ) \ !000 - average divider
+  %100 spi-speed
 ;
 
 : spi-wait-comm ( SPIa -- )
