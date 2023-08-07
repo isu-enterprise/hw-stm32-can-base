@@ -2,7 +2,7 @@
 compiletoram
 \ forgetram
 
-: MCP-NSS GPIOA 15 inline ; \ GPIOA15, PA15
+: MCP-NSS GPIOA 12 inline ; \ GPIOA12, PA12
 : MCP-SPI GPIOB inline ;
 : MCP-MOSI MCP-SPI 5 inline ;
 : MCP-MISO MCP-SPI 4 inline ;
@@ -22,7 +22,7 @@ $40010000 constant AFIO
   RCC.APB2ENR.
   ." remap AFIO.MAPR (0 bit)"
   AFIO.
-  ." nss  GPIOA GPIO.CRH. (PA15)"
+  ." nss  GPIOA GPIO.CRH. (PA12, 4)"
   GPIOA GPIO.CRH.
   ." spi1 GPIOB GPIO.CRL. (PB3-PB5)"
   GPIOB GPIO.CRL.
@@ -94,6 +94,14 @@ $40010000 constant AFIO
 
 ;
 
+: nss\ \ Synthesize \___ ... signal (Start transiver)
+  MCP-NSS gpio-pin-c!
+;
+
+: nss/ \ Synthesize .... ___/ signal (Stop transiver)
+  MCP-NSS gpio-pin-s!
+;
+
 : mcp-stop
   nss/
   spi-stop
@@ -104,22 +112,13 @@ $40010000 constant AFIO
   spi-done
 ;
 
-: nss\ \ Synthesize \___ ... signal (Start transiver)
-  MCP-NSS gpio-pin-c!
-;
-
-: nss/ \ Synthesize .... ___/ signal (Stop transiver)
-  MCP-NSS gpio-pin-s!
-;
-
 : >mcp> ( c -- c ) \ Send/recive a byte
   SPI1 >spi>
 ;
 
 
 : mcp-start
-  SPI1 dup true swap spi-enable
-  drop
+  true SPI1 spi-enable
   nss\
 ;
 
@@ -166,7 +165,7 @@ $40010000 constant AFIO
   if %10 or then
   if %100 or then
   >mcp> drop
-  mc-stop
+  mcp-stop
 ;
 
 : mcp-read-rx ( n flag -- ... ) \ Read RX buffer
@@ -176,7 +175,7 @@ $40010000 constant AFIO
   2 shift or
   >mcp> drop
   >mcp>
-  mc-stop
+  mcp-stop
 ;
 
 : mcp-write-tx ( data n flag -- ) \ Write into TX buffer
