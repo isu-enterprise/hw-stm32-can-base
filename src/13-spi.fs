@@ -1,8 +1,9 @@
 \ SPI
 \ Uses display.fs, system.fs
 
-compiletoram
 forgetram
+
+compiletoram
 
 $40013000 constant SPI1
 $40003800 constant SPI2
@@ -18,30 +19,30 @@ $40003C00 constant SPI3
 : SPI.I2SPR $20 + inline ; \ SPI_I2S prescaler register (\ SPI_I2SPR)
 
 : SPI.CR1.
-  SPI.CR1 bin.
+  SPI.CR1 1b.
 ;
 
 : SPI.CR2.
-  SPI.CR2 bin.
+  SPI.CR2 1b.
 ;
 
 : SPI.SR.
-  SPI.SR bin.
+  SPI.SR 1b.
 ;
 
 : SPI.DR.
-  SPI.DR bin.
+  SPI.DR 1b.
 ;
 
 : SPI.
   cr
-  ." CR1" cr
+  ." CR1"
   dup SPI.CR1.
-  ." CR2" cr
+  ." CR2"
   dup SPI.CR2.
-  ." SR" cr
+  ." SR"
   dup SPI.SR.
-  ." DR" cr
+  ." DR"
   dup SPI.DR.
   drop
 ;
@@ -55,20 +56,20 @@ $40003C00 constant SPI3
   then
 ;
 
-: spi1-rcc-enable! ( flag -- ) \ Enable clocking of SPI1 subsystem
+: spi1-rcc-enable ( flag -- ) \ Enable clocking of SPI1 subsystem
   1 12 lshift
   RCC RCC.APB2ENR
   \ flag mask addr.APB2ENR
   bis?!
 ;
 
-: spi3-rcc-enable! ( flag -- )
+: spi3-rcc-enable ( flag -- )
   1 15 lshift
   RCC RCC.APB1ENR
   bis?!
 ;
 
-: spi2-rcc-enable! ( flag -- )
+: spi2-rcc-enable ( flag -- )
   1 14 lshift
   RCC RCC.APB1ENR
   bis?!
@@ -117,13 +118,13 @@ $40003C00 constant SPI3
   until
 ;
 
-: spi-enable! ( flag SPIa -- )
+: spi-enable ( flag SPIa -- )
   SPI.CR1
   1 6 lshift swap
   bis?!
 ;
 
-: spi-speed! ( SPIa n -- )  \ !000 -- %111 divider value
+: spi-speed ( SPIa n -- )  \ !000 -- %111 divider value
   3 lshift \ SPIa mask
   swap
   SPI.CR1 \ mask SPIa.CR1
@@ -132,16 +133,16 @@ $40003C00 constant SPI3
   bis!
 ;
 
-: spi-low-speed! ( SPIa -- ) \ !111 - big divider
-  %111 spi-speed!
+: spi-low-speed ( SPIa -- ) \ !111 - big divider
+  %111 spi-speed
 ;
 
-: spi-high-speed! ( SPIa -- ) \ !000 - small divider
-  %000 spi-speed!
+: spi-high-speed ( SPIa -- ) \ !000 - small divider
+  %000 spi-speed
 ;
 
-: spi-mid-speed! ( SPIa -- ) \ !000 - average divider
-  %010 spi-speed!
+: spi-mid-speed ( SPIa -- ) \ !000 - average divider
+  %010 spi-speed
 ;
 
 : spi-wait-comm ( SPIa -- )

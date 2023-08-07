@@ -1,8 +1,9 @@
 \ System setup, clock, subsys clocking, etc.
 \ Uses 01-display.fs
 
-compiletoram
+\ compiletoram
 forgetram
+compiletoflash
 
 $40021000 constant RCC
 
@@ -21,21 +22,23 @@ $40021000 constant RCC
 
 
 : RCC.APB2RSTR.
-  RCC RCC.APB2RSTR bin.
+  RCC RCC.APB2RSTR 1b.
 ;
 
 : RCC.APB1RSTR.
-  RCC RCC.APB1RSTR bin.
+  RCC RCC.APB1RSTR 1b.
 ;
 
 : RCC.APB2ENR.
-  RCC RCC.APB2ENR bin.
+  RCC RCC.APB2ENR 1b.
 ;
 
 : RCC.APB1ENR.
-  RCC RCC.APB1ENR bin.
+  RCC RCC.APB1ENR 1b.
 ;
 
 : RCC.AHBENR.
-  RCC RCC.AHBENR bin.
+  RCC RCC.AHBENR 1b.
 ;
+
+compiletoram

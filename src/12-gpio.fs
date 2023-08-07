@@ -1,8 +1,11 @@
 \ compiletoflash
 \ Uses 01-display.fs
 
-compiletoram
-forgetram
+\ compiletoram
+
+compiletoflash
+
+\ forgetram
 
 $40010800 constant GPIOA
 $40010C00 constant GPIOB
@@ -64,7 +67,6 @@ $40011000 constant GPIOC
   inline
 ;
 
-
 : and? ( n mask - flag ) \ make and and check any 1-s
   and 0<>
   inline
@@ -91,7 +93,7 @@ $40011000 constant GPIOC
   inline
 ;
 
-: gpio-pin! ( Flag addr pin -- ) \ If flag==true sets pin high, otherwise low
+: gpio-pin! ( flag addr pin -- ) \ If flag==true sets pin high, otherwise low
   1 pin-lshift$
   swap GPIO.BSRR
   \ Flag mask addr.BSRR
@@ -116,3 +118,4 @@ $40011000 constant GPIOC
 ;
 
 \ Note, led on pin PC13 lights if its bit cleared
+compiletoram

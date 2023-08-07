@@ -22,15 +22,23 @@ TYPE ;
 TYPE ;
 
 
-: 1b. ( u -- ) cr \ Label 1 bit generic groups
-  @ dup hex. cr
+: val. ( addr -- ) \ Show address and its content in hex
+  cr
+  dup ." a: $" hex. cr
+  @   ." v: $" hex.
+;
+
+: 1b. ( addr -- ) \ Show address content by bits
+  dup val. cr
+  @
   ." 3|3|2|2|2|2|2|2|2|2|2|2|1|1|1|1|1|1|1|1|1|1|" cr
   ." 1|0|9|8|7|6|5|4|3|2|1|0|9|8|7|6|5|4|3|2|1|0|9|8|7|6|5|4|3|2|1|0 " cr
   binary b32loop. decimal cr
 ;
 
-: CRb. ( u -- ) cr \ Label 1 bit generic groups
-  @ dup hex. cr
+: CRb. ( addr -- ) \ Show address content by 2 bit fields
+  dup val. cr
+  @
   ." 3|3|2|2|2|2|2|2|2|2|2|2|1|1|1|1|1|1|1|1|1|1|0|0|0|0|0|0|0|0|0|0|" cr
   ." 1|0|9|8|7|6|5|4|3|2|1|0|9|8|7|6|5|4|3|2|1|0|9|8|7|6|5|4|3|2|1|0|" cr
   ." ---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+" cr
