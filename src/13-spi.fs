@@ -82,7 +82,7 @@ $40003C00 constant SPI3
   swap bit@
 ;
 
-: spi-txe? ( SPIa -- flag ) \ Is transmit buffer empty ?
+: spi-tx? ( SPIa -- flag ) \ Is transmit buffer empty ?
   1 spi-sr-tb$@
 ;
 
@@ -152,10 +152,24 @@ $40003C00 constant SPI3
   drop
 ;
 
+: spi-wait-tx
+  begin
+    dup spi-tx?
+  until
+  drop
+;
+
+: spi-wait-rx
+  begin
+    dup spi-rx?
+  until
+  drop
+;
+
 : >spi> ( n SPIa -- n ) \ transmits byte/word and receives byte/word.
-  dup spi-wait-comm
+  dup spi-wait-tx \ TXE
   swap \ SPIa n
   over spi! \ SPIa
-  dup spi-wait-comm
-  dup spi@
+  dup spi-wait-rx \ RXNE ... not empty ...
+  spi@
 ;
