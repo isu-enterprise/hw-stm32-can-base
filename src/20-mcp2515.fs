@@ -94,6 +94,11 @@ $40010000 constant AFIO
 
 ;
 
+: mcp-stop
+  nss/
+  spi-stop
+;
+
 : mcp-done
   mcp-stop
   spi-done
@@ -116,11 +121,6 @@ $40010000 constant AFIO
   SPI1 dup true swap spi-enable
   drop
   nss\
-;
-
-: mcp-stop
-  nss/
-  spi-stop
 ;
 
 
@@ -204,5 +204,18 @@ $40010000 constant AFIO
   cr ." -----------------------" cr
   MCP.
   mcp-read-status bin.
+  mcp-done
+;
+
+
+: mcp-reg-dump ( -- ) \ Read all CAN controller registers
+  mcp-init
+  7 0 do
+    $F 0 do
+      j 8 lshift i or \ an Address
+      mcp-read hex. space
+    loop
+    cr
+  loop
   mcp-done
 ;
