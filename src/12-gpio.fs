@@ -32,8 +32,8 @@ $40011000 constant GPIOC
 ;
 
 : gpio-setup ( addr pin mode conf -- )
-  2 lshift or \ addr pin code
-  -rot
+  2 lshift or \ addr pin mask
+  -rot        \ mask addr pin
   dup 7 > if
     8 -
     swap
@@ -42,9 +42,10 @@ $40011000 constant GPIOC
     swap
     GPIO.CRL
   then
+  \ mask pin1 addr.CR*
   -rot
   \ addr.CR* code pin
-  2 lshift \ addr.CR* code shift
+  2 lshift \ addr.CR* mask shift
   >r
   over %1111 r@ lshift swap bic! \ clear setup bits
   r>
