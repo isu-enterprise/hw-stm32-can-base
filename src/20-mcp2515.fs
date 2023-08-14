@@ -9,34 +9,23 @@ compiletoram
 : MCP-SCK MCP-SPI 3 inline ;
 : MCP-INT GPIOA 12 inline ;
 
-
-$40010000 constant AFIO
-
-: AFIO.MAPR $04 + inline ; \ AF remap and debug I/O configuration register (AFIO_MAPR)
-
-: AFIO.
-  \ ." AFIO.MAPR, bit 0"
-  AFIO AFIO.MAPR 1b.
+: RCC.APB2ENR.
+  RCC RCC.APB2ENR 1b.
 ;
 
 : MCP.
-  ." enable RCC.APB2ENR. (12-spi1, 0-afio)"
+  ." enable RCC.APB2ENR. (12-spi1)"
   RCC.APB2ENR.
-  ." remap AFIO.MAPR (0 bit)"
-  AFIO.
-  ." nss  GPIOA GPIO.CRH. (PA12, 4)"
-  GPIOA GPIO.CRH.
+  ." nss  GPIOA GPIO.CRH. (PA12, 4, PA15, 7)"
+  GPIOA GPIO.
   ." spi1 GPIOB GPIO.CRL. (PB3-PB5)"
-  GPIOB GPIO.CRL.
+  GPIOB GPIO.
   ." SPI1 registers"
   SPI1 SPI.
 ;
 
 : spi-init
   true spi1-rcc-enable
-  %1 \ 0 lshift ;-)
-  \ TODO: AFIO ENABLE
-  AFIO AFIO.MAPR bis! \ Remap SPI1 to PB3-5...
 ;
 
 : spi-stop
@@ -58,23 +47,42 @@ $40010000 constant AFIO
 
 : mcp-init
   \ HArdare control on NSS via GPIO
-  \       mode conf
-  MCP-NSS %01 %00 gpio-setup \ 10 Mhz, Output
-  MCP-SCK %01 %10 gpio-setup \ Output, AF
-  MCP-MISO %00 %10 gpio-setup \ Input, AF
-  MCP-MOSI %01 %10 gpio-setup \ Output, AF
+  %01 MCP-NSS gpio-pin-moder!   \ Output
+  %0  MCP-NSS gpio-pin-otyper!  \ push pull output
+  %10 MCP-NSS gpio-pin-ospeedr! \ High speed
+  %00 MCP-NSS gpio-pin-pupdr!   \ No PULL-Ups
+  \ SPI SCK pin PB3
+  %10 MCP-SCK gpio-pin-moder!   \ Alterative function
+  5   MCP-SCK gpio-pin-af!
+  %0  MCP-SCK gpio-pin-otyper!
+  %10 MCP-SCK gpio-pin-ospeedr!
+  %00 MCP-SCK gpio-pin-pupdr!
+  \ SPI MISO pin PB4
+  %10 MCP-MISO gpio-pin-moder!   \ Alterative function
+  5   MCP-MISO gpio-pin-af!
+  %0  MCP-MISO gpio-pin-otyper!
+  %10 MCP-MISO gpio-pin-ospeedr!
+  %00 MCP-MISO gpio-pin-pupdr!
+  \ SPI MOSI pin PB5
+  %10 MCP-MOSI gpio-pin-moder!   \ Alterative function
+  5   MCP-MOSI gpio-pin-af!
+  %0  MCP-MOSI gpio-pin-otyper!
+  %10 MCP-MOSI gpio-pin-ospeedr!
+  %00 MCP-MOSI gpio-pin-pupdr!
   \ SPI1 init
   spi-init
-  \ TODO: Interrupt is on PB7
+  \ TODO: Interrupt is on PA12
   SPI1 dup spi-low-speed
        dup SPI.CR1
            \ CPOL=0
            \ CPHA=0 ___/---
-           dup %11 swap bic!
+       dup %11 swap bic!
            \ LSBFirst first = 0
            dup %1 7 lshift swap bic!
-           \ SSM=0
-           dup %1 9 lshift swap bic!
+           \ SSM=1
+           dup %1 9 lshift swap bis!
+           \ SSI=1
+           dup %1 8 lshift swap bis!
            \ DFF - 8bit = 0
            dup %1 11 lshift swap bic!
            \ BIDIMODE = 0, BIDIOE=0
@@ -87,11 +95,14 @@ $40010000 constant AFIO
       dup SPI.CR2
            \ SSOE=0 (1?)
           dup %1 2 lshift swap bic!
+          dup %1 2 lshift swap bic! \ NO TI mode
           drop
+      \ TODO: FRF \ TI protocol
       dup SPI.CR1
           \ MSTR set
           dup %1 2 lshift swap bis!
           drop
+      drop
   \ SPIE set
 
 ;
@@ -120,6 +131,7 @@ $40010000 constant AFIO
 
 
 : mcp-start
+  1 2 lshift SPI1 SPI.CR1 bis! \ MSTR setting
   true SPI1 spi-enable
   nss\
 ;
@@ -174,7 +186,7 @@ $40010000 constant AFIO
   mcp-start
   %10010000
   if %10 or then
-  2 shift or
+  2 lshift or
   >mcp> drop
   >mcp>
   mcp-stop

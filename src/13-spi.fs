@@ -84,10 +84,9 @@ $40013400 constant SPI4
 ;
 
 
-: spi-sr-tb$@ ( bitn SPIa -- flag ) \
-  SPI.SR %1 \ bit SPIa.SR %1
-  rot lshift \ SPIa.SR mask
-  swap bit@
+: spi-sr-tb$@ ( SPIa bitn -- flag ) \
+  %1 swap lshift \ SPIa mask
+  swap SPI.SR bit@
 ;
 
 : spi-tx? ( SPIa -- flag ) \ Is transmit buffer empty ?
@@ -160,14 +159,14 @@ $40013400 constant SPI4
   drop
 ;
 
-: spi-wait-tx
+: spi-wait-tx ( SPIa -- )
   begin
     dup spi-tx?
   until
   drop
 ;
 
-: spi-wait-rx
+: spi-wait-rx ( SPIa -- )
   begin
     dup spi-rx?
   until
