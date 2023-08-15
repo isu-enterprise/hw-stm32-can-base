@@ -56,3 +56,13 @@ dkms.conf
 mecrisp*
 tmp
 /doc/mx/Drivers/
+
+/doc/neg
+/sch/adapter/adapter-backups
+/sch/adapter/*.gbr
+/sch/adapter/*.drl
+/sch/adapter/*.gbrjob
+/sch/adapter/*.zip
+/sch/adapter/*-cache
+
+
