@@ -3,7 +3,8 @@
 
 forgetram
 
-compiletoram
+\ compiletoram
+compiletoflash
 
 $40013000 constant SPI1
 $40003800 constant SPI2
@@ -180,3 +181,5 @@ $40013400 constant SPI4
   dup spi-wait-rx \ RXNE ... not empty ...
   spi@
 ;
+
+compiletoram

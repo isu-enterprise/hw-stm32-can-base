@@ -2,7 +2,8 @@
 compiletoram
 \ forgetram
 
-: MCP-NSS GPIOA 15 inline ;
+: MCP-NSS-0 GPIOA 15 inline ;
+: MCP-NSS-1 GPIOA 11 inline ;
 : MCP-SPI GPIOB inline ;
 : MCP-MOSI MCP-SPI 5 inline ;
 : MCP-MISO MCP-SPI 4 inline ;
@@ -47,10 +48,15 @@ compiletoram
 
 : mcp-init
   \ HArdare control on NSS via GPIO
-  %01 MCP-NSS gpio-pin-moder!   \ Output
-  %0  MCP-NSS gpio-pin-otyper!  \ push pull output
-  %10 MCP-NSS gpio-pin-ospeedr! \ High speed
-  %00 MCP-NSS gpio-pin-pupdr!   \ No PULL-Ups
+  %01 MCP-NSS-0 gpio-pin-moder!   \ Output
+  %0  MCP-NSS-0 gpio-pin-otyper!  \ push pull output
+  %10 MCP-NSS-0 gpio-pin-ospeedr! \ High speed
+  %00 MCP-NSS-0 gpio-pin-pupdr!   \ No PULL-Ups
+
+  %01 MCP-NSS-1 gpio-pin-moder!   \ Output
+  %0  MCP-NSS-1 gpio-pin-otyper!  \ push pull output
+  %10 MCP-NSS-1 gpio-pin-ospeedr! \ High speed
+  %00 MCP-NSS-1 gpio-pin-pupdr!   \ No PULL-Ups
   \ SPI SCK pin PB3
   %10 MCP-SCK gpio-pin-moder!   \ Alterative function
   5   MCP-SCK gpio-pin-af!
@@ -107,20 +113,29 @@ compiletoram
 
 ;
 
-: nss\ \ Synthesize \___ ... signal (Start transiver)
-  MCP-NSS gpio-pin-c!
+
+: nss-which ( n -- addr pin ) \ convert n, mcp number,
+                              \ in addr-pin combo
+  dup 0= if drop MCP-NSS-0 exit then
+  1 = if MCP-NSS-1 exit then
+  ." ERROR: wrong SPI No"
 ;
 
-: nss/ \ Synthesize .... ___/ signal (Stop transiver)
-  MCP-NSS gpio-pin-s!
+: nss\ ( n -- )  \ Synthesize \___ ... signal (Start transiver)
+                 \ n = mcp number
+  nss-which gpio-pin-c!
 ;
 
-: mcp-stop
+: nss/ ( n -- ) \ Synthesize .... ___/ signal (Stop transiver)
+  nss-which gpio-pin-s!
+;
+
+: mcp-stop ( n -- )
   nss/
   spi-stop
 ;
 
-: mcp-done
+: mcp-done ( n -- )
   mcp-stop
   spi-done
 ;
@@ -130,7 +145,7 @@ compiletoram
 ;
 
 
-: mcp-start
+: mcp-start ( n -- )
   1 2 lshift SPI1 SPI.CR1 bis! \ MSTR setting
   true SPI1 spi-enable
   nss\
@@ -141,92 +156,102 @@ compiletoram
 \  dup >r \ save resulting length
 
 
-: mcp-read ( mcp-addr -- n ) \ Reads addr-register, byte
-  mcp-start
+: mcp-read ( mcp-addr n -- n ) \ Reads addr-register, byte
+  >r
+  r@ mcp-start
   %00000011 >mcp> drop
   >mcp> drop
   0 >mcp>
-  mcp-stop
+  r> mcp-stop
 ;
 
-: mcp-write ( n mcp-addr -- ) \ Writes addr-register, byte
-  mcp-start
+: mcp-write ( n mcp-addr n -- ) \ Writes addr-register, byte
+  >r
+  r@ mcp-start
   %00000010 >mcp> drop
   >mcp> drop
   >mcp> drop
-  mcp-stop
+  r> mcp-stop
 ;
 
 
-: mcp-read-status ( -- n ) \ Read status
-  mcp-start
+: mcp-read-status ( n -- n ) \ Read status
+  >r
+  r@ mcp-start
   %10100000 >mcp> drop
   0 >mcp>
-  mcp-stop
+  r> mcp-stop
 ;
 
-: mcp-rx-status  ( -- n ) \ Read RX status
-  mcp-start
+: mcp-rx-status  ( n -- n ) \ Read RX status
+  >r
+  r@ mcp-start
   %10110000 >mcp> drop
   0 >mcp>
-  mcp-stop
+  r> mcp-stop
 ;
 
-: mcp-rts ( flag2 flag1 flag0 -- ) \ Request-to-send TC buffers 0,1,2
-  mcp-start
+: mcp-rts ( flag2 flag1 flag0 n -- ) \ Request-to-send TC buffers 0,1,2
+  >r
+  r@ mcp-start
   %10000000
   if %1 or then
   if %10 or then
   if %100 or then
   >mcp> drop
-  mcp-stop
+  r> mcp-stop
 ;
 
-: mcp-read-rx ( n flag -- ... ) \ Read RX buffer
-  mcp-start
+: mcp-read-rx ( n flag n -- ... ) \ Read RX buffer
+  >r
+  r@ mcp-start
   %10010000
   if %10 or then
   2 lshift or
   >mcp> drop
   >mcp>
-  mcp-stop
+  r> mcp-stop
 ;
 
-: mcp-write-tx ( data n flag -- ) \ Write into TX buffer
-  mcp-start
+: mcp-write-tx ( data n flag n -- ) \ Write into TX buffer
+  >r
+  r@ mcp-start
   %01000000
   if %1 or then
   1 lshift or
   >mcp> drop
   >mcp> drop
-  mcp-stop
+  r> mcp-stop
 ;
 
-: mcp-mod ( data mask mcp-add -- ) \ Modify according to mask and data
-  mcp-start
+: mcp-mod ( data mask mcp-add n -- ) \ Modify according to mask and data
+  >r
+  r@ mcp-start
   %00000101 >mcp> drop
   >mcp> drop
   >mcp> drop
   >mcp> drop
-  mcp-stop
+  r> mcp-stop
 ;
 
 
-: mcp-test
-  mcp-init
+: mcp-test ( n -- ) \ n - mcp No = 0,1
+  dup mcp-init
   cr ." -----------------------" cr
   MCP.
-  mcp-read-status bin.
+  dup mcp-read-status bin.
   mcp-done
 ;
 
 
-: mcp-reg-dump ( -- ) \ Read all CAN controller registers
-  mcp-init
+: mcp-reg-dump ( n -- ) \ Read all CAN controller registers
+  dup mcp-init
+  cr
   7 0 do
     $F 0 do
       j 8 lshift i or \ an Address
-      mcp-read hex. space
+      dup hex. ." ="
+      over mcp-read hex. space
     loop
     cr
   loop
