@@ -1,6 +1,7 @@
 \ Uses SPI.fs, gpio.fs
-compiletoram
-\ forgetram
+\ compiletoram
+forgetram
+compiletoflash
 
 : MCP-NSS-0 GPIOA 15 inline ;
 : MCP-NSS-1 GPIOA 11 inline ;
@@ -257,3 +258,5 @@ compiletoram
   loop
   mcp-done
 ;
+
+compiletoram
