@@ -1,4 +1,4 @@
-\ Uses SPI.fs, gpio.fs
+\ Uses SPI.fs, gpio.fs, printing.fs
 \ compiletoram
 forgetram
 compiletoflash
@@ -79,7 +79,8 @@ compiletoflash
   \ SPI1 init
   spi-init
   \ TODO: Interrupt is on PA12
-  SPI1 dup spi-low-speed
+  \ SPI1 dup spi-low-speed
+  SPI1 dup spi-high-speed
        dup SPI.CR1
            \ CPOL=0
            \ CPHA=0 ___/---
@@ -111,7 +112,6 @@ compiletoflash
           drop
       drop
   \ SPIE set
-
 ;
 
 
@@ -246,16 +246,34 @@ compiletoflash
 
 
 : mcp-reg-dump ( n -- ) \ Read all CAN controller registers
-  dup mcp-init
+  \ TODO: Check if spi is ready, else it hangs
   cr
-  7 0 do
-    $F 0 do
-      j 8 lshift i or \ an Address
-      dup hex. ." ="
-      over mcp-read hex. space
+  ." MCP-Dump interface: " dup . cr
+  ."   | "
+  $10 0 do
+    i ch. space
+    i 7 = if space space then
+  loop
+  cr
+  ." ---+-"
+  8 0 do ." ---" loop
+  ." --"
+  8 0 do ." ---" loop
+  cr
+  8 0 do
+    i 4 lshift ch. ." | "
+    $10 0 do
+      j 4 lshift i or \ n mcp-reg-addrs
+      over mcp-read ch. space
+      i 7 = if space space then
     loop
     cr
   loop
+;
+
+: mcp-reg-test ( n -- ) \ initialize and dump
+  dup mcp-init
+  dup mcp-reg-dump
   mcp-done
 ;
 
