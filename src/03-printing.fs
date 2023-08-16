@@ -1,13 +1,15 @@
 \ Printing various structures, e.g. two-digit hexadecimals
 
-compiletoram
+\ compiletoram
+forgetram
+compiletoflash
 
 : ? @ . inline ;
 : u? @ u. inline ;
 
 : ch. ( n -- )
   dup $ff >
-  if ." not a 8 bit char" hex.
+  if ." not a 8 bit char $" hex.
   else
     0
     base @
