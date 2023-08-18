@@ -57,6 +57,8 @@ $08 constant TXB-EXIDE-MASK
 
 $2b constant MCP-CANINTE
 $2c constant MCP-CANINTF
+$0e constant MCP-CANSTAT
+$e0 constant MCP-CANSTAT-OPMOD
 
 \ ---------- Adapter application subroutines for mcp-2515 can -------
 \ https://github.com/autowp/arduino-mcp2515 - Helping sources
@@ -82,10 +84,19 @@ $2c constant MCP-CANINTF
 
 : mcan-mode ( nmode n -- ) \ Set mode of mcp-2515
   >r
+  dup \ save nmode
   $E0 \ mask
   $0F \ MCP-CANCTRL register
-  r>
+  r@
   mcp-mod
+  \ nmode
+  begin
+    mcan-delay
+    MCP-CANSTAT r@ mcp-read
+    MCP-CANSTAT-OPMOD and
+    over =
+  until
+  drop rdrop
 ;
 
 : mcan-mode-config ( n -- ) \ Ensure mcan in the config mode
@@ -220,9 +231,12 @@ $2c constant MCP-CANINTF
   drop
 ;
 
+: mcan-status ( n -- n ) \ Get status
+  mcp-read-status
+  inline
+;
+
 \ ----------- application words, subject to move to a new 40-...fs file
-
-
 
 : a-init ( -- ) \ Inits the adapter of two can interfaces
   2 0 do
