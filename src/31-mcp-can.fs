@@ -5,6 +5,9 @@ compiletoram
 
 
 \ ---------- Forgotten routines of mcp-2515 -----
+
+8000000 constant MCP-CLOCK
+
 : mcp-nwrite ( vn-1 ... v0 nlen mcp-addr n -- ) \ Writes in registers
   >r
   r@ mcp-start
@@ -54,11 +57,18 @@ compiletoram
 ;
 
 $08 constant TXB-EXIDE-MASK
-
 $2b constant MCP-CANINTE
 $2c constant MCP-CANINTF
 $0e constant MCP-CANSTAT
 $e0 constant MCP-CANSTAT-OPMOD
+
+\ 8 mhz clock
+\ 00 80 80  (1mbps)
+\ 00 90 82  (500 kbps)
+\ 00 b1 85  (250 kbps)
+\ 01 b1 b5  (125 kbps)
+\ . . . .
+\ 1f d0 82  (5 kbps)
 
 \ ---------- Adapter application subroutines for mcp-2515 can -------
 \ https://github.com/autowp/arduino-mcp2515 - Helping sources
@@ -97,6 +107,12 @@ $e0 constant MCP-CANSTAT-OPMOD
     over =
   until
   drop rdrop
+;
+
+: mcan-nbt! ( ncf1 ncf2 ncf3 n -- ) \ Set Nominal Bit Time
+  3 swap
+  $28 swap
+  mcp-nwrite
 ;
 
 : mcan-mode-config ( n -- ) \ Ensure mcan in the config mode
@@ -175,6 +191,14 @@ $e0 constant MCP-CANSTAT-OPMOD
   mcp-nwrite
 ;
 
+: mcan-500KBps ( n -- ) \ Set 500 KBps bitrate for 8 MHz osc
+  >r
+  $00 $90 $82
+  r>
+  mcan-nbt!
+;
+
+
 : mcan-init ( n -- ) \ The subroutine inits the n-th can mcp-2515 interface
   dup nss/
   mcan-delay
@@ -244,6 +268,8 @@ $e0 constant MCP-CANSTAT-OPMOD
   loop
   2 0 do
     i mcan-init
+    i mcan-500KBps
+    \ i mcan-mode-normal
   loop
 ;
 
