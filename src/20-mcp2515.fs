@@ -119,7 +119,7 @@ compiletoflash
                               \ in addr-pin combo
   dup 0= if drop MCP-NSS-0 exit then
   1 = if MCP-NSS-1 exit then
-  ." ERROR: wrong SPI No"
+  ." ERROR: wrong SPI No" cr
 ;
 
 : nss\ ( n -- )  \ Synthesize \___ ... signal (Start transiver)
