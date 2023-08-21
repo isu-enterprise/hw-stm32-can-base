@@ -140,7 +140,7 @@ $e0 constant MCP-CANSTAT-OPMOD
   $00 swap mcan-mode
 ;
 
-: mcan-fm! ( ndh-dl-e8-e0 fm-addr n -- ) \ Set filter/mask-addr 4 bytes
+: mcan-id! ( ndh-dl-e8-e0 fm-addr n -- ) \ Set filter/mask-addr 4 bytes
   >r >r
   3 0 do
     dup $ff and swap 8 rshift
@@ -184,6 +184,24 @@ $e0 constant MCP-CANSTAT-OPMOD
   inline
 ;
 
+: mcan-txb-addr ( n -- addr )
+  %0011 + 4 lshift
+  inline
+;
+
+: mcan-rxb-addr ( n -- addr )
+  %0110 + 4 lshift
+  inline
+;
+
+: mcan-xb-id ( addr -- addr )
+  1+ inline
+;
+
+: mcan-xb-buf ( addr -- addr )
+  %0101 + inline
+;
+
 : (mcan-nwrite) ( mcp.*XB-addr nval count n -- )
   >r
   rot >r \ R: n addr
@@ -198,6 +216,73 @@ $e0 constant MCP-CANSTAT-OPMOD
   mcan-nbt!
 ;
 
+: mcan-save-message ( nm...n0 nlen ncanid flag ntxb n -- )
+  \ Send message via ntxb-th buffer of n-th mcan infs
+  2>r
+  mcan-prep-id$
+  2r@ swap
+  mcan-txb-addr mcan-xb-id \ ntxb-th CAN id buffer addr
+  swap mcan-id!
+  \ CAN id now stored in ntxb-th buffer
+  dup 1+
+  2r> swap
+  mcan-txb-addr mcan-xb-buf \ ntxb-th CAN buff addr
+  swap
+  mcp-nwrite
+;
+
+
+: mcan-send-txb ( ntxb n -- ) \ Send message in ntxb-th buffer
+  swap mcan-txb-addr swap 2>r
+  $08 $08 2r> mcp-mod
+;
+
+: mcan-txb-status@ ( ntxb n -- n ) \ Reads status
+  swap mcan-txb-addr swap
+  mcp-read
+;
+
+
+: mcan-tx-failed? ( ntxb n -- flag ) \ Check if sending failed
+  mcan-txb-status@
+  %01110000 and 0<> \ true if a bit set
+;
+
+
+: mcan-tx-message ( nm...n0 nlen ncanid flag ntxb n -- flag )
+  \ Send message via ntxb-th buffer
+  2>r
+  2r@
+  mcan-save-message \ Save message in buffer
+  2r@ mcan-send-txb \ Try Send it from the buffer
+  2r> mcan-tx-failed? not \ Load flag if it is OK
+;
+
+: mcan-txb-free? ( ntxb n -- flag ) \ Is ntxb-th buffer free for sending?
+  mcan-txb-status@
+  $08 and 0=
+;
+
+
+: mcan-find-ntxb ( n -- ntxb flag ) \ Find a free tx buffer
+  \ If found flag is true and ntxb is the number.
+  \ In the other case ntxb must be ignored
+  0 false
+  3 0 do i 2 pick
+         mcan-txb-free? if
+           i true leave
+         then
+      loop
+  if \ found
+    >r \ ntxb
+    2drop drop
+    r> true
+  else
+    \ n 0
+    swap drop \ 0
+    false
+  then
+;
 
 : mcan-init ( n -- ) \ The subroutine inits the n-th can mcp-2515 interface
   dup nss/
@@ -233,14 +318,14 @@ $e0 constant MCP-CANSTAT-OPMOD
     0 i 1 = mcan-prep-id$ \ n can-id
     i mcan-rxf-addr \ n can-id caddr
     rot
-    mcan-fm!
+    mcan-id!
   loop
   2 0 do
     dup
     0 true mcan-prep-id$
     i mcan-rxm-addr
     rot
-    mcan-fm!
+    mcan-id!
   loop
   drop
 
@@ -269,7 +354,7 @@ $e0 constant MCP-CANSTAT-OPMOD
   2 0 do
     i mcan-init
     i mcan-500KBps
-    \ i mcan-mode-normal
+    i mcan-mode-normal
   loop
 ;
 
@@ -282,5 +367,38 @@ $e0 constant MCP-CANSTAT-OPMOD
   loop
 ;
 
+0 constant CAN0
+
+: a-send-test-message ( canid -- ) \ Send a test message
+  CAN0 mcan-find-ntxb
+  if
+    >r \ R: ntxb
+
+    ." Found buffer "
+    r@ . cr
+
+    8 0 do i loop 8 \ The message
+    8 true \ Extended ID
+    r>
+    CAN0 mcan-tx-message
+    CAN0 mcan-tx-failed? if
+      ." MCAN TX FAILED!"
+    else
+      ." MCAN TX SUCCESS!"
+    then
+    cr
+  else
+    drop \ We have not found a free buffer
+  then
+;
+
 compiletoram
-: ttt a-init ;
+: ttt
+  a-init
+  mcan-delay
+  3 0 do
+    i 10 +
+    ." Try send " dup hex. ." CANID message" cr
+    a-send-test-message
+  loop
+;
