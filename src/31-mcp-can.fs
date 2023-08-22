@@ -287,16 +287,16 @@ $e0 constant MCP-CANSTAT-OPMOD
 : mcan-find-ntxb ( n -- ntxb flag ) \ Find a free tx buffer
   \ If found flag is true and ntxb is the number.
   \ In the other case ntxb must be ignored
-  \ h.s
+
   0 false
   \ ." CYCLE: " cr
-  \ h.s
+
   3 0 do i 2 pick
          mcan-txb-free? if
            i true leave
          then
       loop
-  \ h.s
+
   if \ found
     >r \ ntxb
     2drop
@@ -400,22 +400,22 @@ $e0 constant MCP-CANSTAT-OPMOD
 : mcan-load-message ( nrxb n -- d0...d7 ndlen canid flag )
   \ Load a message from buffer nrxb (0..1) and n-th can mcp
   \ ." -----" cr
-  \ h.s
+
   swap mcan-rxb-addr swap \ rxb.base.addr n
   2>r
   \ ." reading len" cr
   2r@ swap mcan-xb-buf swap mcp-read \ Length of the message
   \ ." MSG LEN:" dup . cr
   \ ." reading data" cr
-  \ h.s
+
   dup 0<> if
     2r@ swap mcan-xb-buf 1+ swap \ nlen mcp-addr n
     \ ." =====" cr
-    \ h.s
+
     mcp-nread
     \ d0...d7 nlen
   then
-  \ h.s
+
   \ ." Reading canid" cr
   4 2r> swap mcan-xb-id swap mcp-nread
   drop \ length of 4
@@ -430,7 +430,7 @@ $e0 constant MCP-CANSTAT-OPMOD
   1+ \ mask = nrxb+1
   0 swap %00101100 r>
   \ ." clearing" cr
-  \ h.s
+
   mcp-mod
 ;
 
@@ -473,43 +473,41 @@ $e0 constant MCP-CANSTAT-OPMOD
 1 constant CAN1
 
 : a-receive-message ( n -- ) \ Receive and print
-  \ h.s
+
   dup mcan-nrxb
-  \ h.s
+
   dup 0= if
-    ." No message yet." cr
+    \ ." No message yet." cr
     drop \ len
     drop \ bufs
     drop \ n
     exit
   then
   ." A Message! " cr
-  \ h.s
+
   \ ." No of full buffers:" dup . cr
   0 do \ canid rxbufs
     \ ." Iteration: " i . cr
     \ ." bfsno: " dup ch. cr
     dup i 4 * rshift $0F and \ n rxbufs nrxb
-    \ h.s
+
     \ ." Consider buffer: " dup . cr
     2 pick
-    \ h.s
+
     2dup mcan-load-message
-    ." received msg" cr
-    h.s
     mcan-message.
-    \ h.s
+
     mcan-clear-rxb
-    \ h.s
+
   loop
   drop \ rxbufs
   drop \ n
 ;
 
 : a-send-test-message ( canid -- ) \ Send a test message as CAN ID canid
-  \ h.s
+
   CAN0 mcan-find-ntxb \ canid ntxb flag
-  \ h.s
+
   if
     >r \ canid  R: ntxb
 
@@ -531,8 +529,7 @@ $e0 constant MCP-CANSTAT-OPMOD
 
     true \ Extended ID
     r> \ ntxb
-    ." Sending message!" cr
-    h.s
+    \ ." Sending message!" cr
     CAN0 mcan-tx-message
     if
       ." MCAN TX SUCCESS!"
@@ -550,20 +547,21 @@ $e0 constant MCP-CANSTAT-OPMOD
 compiletoram
 
 : ttt
-  \ h.s
+
   a-init
   mcan-delay
-  \ h.s
+
   CAN1 a-receive-message
-  \ h.s
-  ." SENDING " cr
+
+  ." SENDING messages " cr
   3 0 do
-    i 10 +
-    ." Try send " dup hex. ." CANID message" cr
-    \ h.s
+    i 2 lshift
+    dup
+    ." Try send " dup ch. space ." CANID message" cr
     a-send-test-message
-    \ ." LOOK at stack " cr
-    \ h.s
+    1+
+    ." Try send " dup ch. space ." CANID message" cr
+    a-send-test-message
     10 0 do
       \ ." RECEIVING it:" i . cr
       CAN1 a-receive-message
