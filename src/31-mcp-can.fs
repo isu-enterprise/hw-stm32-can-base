@@ -515,11 +515,20 @@ $e0 constant MCP-CANSTAT-OPMOD
 
     ." Found buffer:" r@ . cr
 
-    \ 8 0 do dup i + dup ch. space loop 8 \ The message
-    h.s
-    8 0 do i $f0 or dup ch. space loop 8 \ The message
+    8 0 do
+      dup 4 lshift i or $ff and
+      dup ch. space
+      swap \ shift canid
+    loop
+    \ 8 0 do i $f0 or
+    \        dup ch. space
+    \        swap \ Shift canid
+    \     loop
+
+    8 \ The message length
     dup ch. space cr
     swap \ ... 8 canid
+
     true \ Extended ID
     r> \ ntxb
     ." Sending message!" cr
