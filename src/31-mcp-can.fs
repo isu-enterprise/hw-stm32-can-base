@@ -576,16 +576,8 @@ false constant MCAN-ERR
 
 compiletoram
 
-: ttt
 
-  a-init
-  mcan-delay
-
-  ." Receiving previous messages " cr
-
-  CAN1 a-receive-message
-
-  ." SENDING messages " cr
+: mcan-sr-test
   3 0 do
     i 5 + 2 lshift
     dup
@@ -601,4 +593,26 @@ compiletoram
   loop
 ;
 
-\ ttt
+: ttt
+
+  a-init
+  mcan-delay
+
+  ." Receiving previous messages " cr
+
+  CAN1 a-receive-message
+
+  ." SENDING messages " cr
+  mcan-sr-test
+;
+
+: mega-ttt ( number-of-tests -- ) \ Run number... repetitions of test
+  dup 2 < if
+    drop
+    ." At least 2 tests needed!" cr
+  then
+  1-
+  0 do
+    mcan-sr-test
+  loop
+;
