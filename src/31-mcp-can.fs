@@ -24,11 +24,15 @@ compiletoram
     drop 2drop 0
     exit
   then
+  \ mcp-addr n nlen
   >r \ Save the length
   >r \ Save n
+  \ mcp-addr
   r@ mcp-start
   %00000011 >mcp> drop \ Read cmd
-  2r@ drop 0 do 0 >mcp> loop
+  >mcp> drop \ Set addr
+  2r@ drop \ nlen
+  0 do 0 >mcp> loop
   r@ mcp-stop
   2r> drop \ Set length in the stack
 ;
@@ -283,20 +287,26 @@ $e0 constant MCP-CANSTAT-OPMOD
 : mcan-find-ntxb ( n -- ntxb flag ) \ Find a free tx buffer
   \ If found flag is true and ntxb is the number.
   \ In the other case ntxb must be ignored
+  \ h.s
   0 false
+  \ ." CYCLE: " cr
+  \ h.s
   3 0 do i 2 pick
          mcan-txb-free? if
            i true leave
          then
       loop
+  \ h.s
   if \ found
     >r \ ntxb
-    2drop drop
+    2drop
+    drop \ n
     r> true
   else
     \ n 0
-    swap drop \ 0
-    false
+    swap \ 0 n
+    drop
+    false \ 0 false
   then
 ;
 
@@ -368,15 +378,15 @@ $e0 constant MCP-CANSTAT-OPMOD
 ;
 
 
-: mcan-nrxb ( n -- n1-n0 n ) \ Which mailbox the message received in
+: mcan-nrxb ( n -- n1-n0 nlen ) \ Which mailbox the message received in
   \ Returns
   \ n0-n1 - mailbox numbers (4bit fields)
   \ n - the number of non-empty mailboxes
   mcan-status@
-  3 and
+  3 and \ satus
   dup 0= if drop 0 0 exit then
   dup %10 = if drop $01 1 exit then
-  %01 = if drop $00 1 exit then
+  %01 = if $00 1 exit then
   \ %11
   $10 2
 ;
@@ -389,35 +399,52 @@ $e0 constant MCP-CANSTAT-OPMOD
 
 : mcan-load-message ( nrxb n -- d0...d7 ndlen canid flag )
   \ Load a message from buffer nrxb (0..1) and n-th can mcp
-  swap mcan-rxb-addr swap \ rxb.addr n
+  \ ." -----" cr
+  \ h.s
+  swap mcan-rxb-addr swap \ rxb.base.addr n
   2>r
   \ ." reading len" cr
   2r@ swap mcan-xb-buf swap mcp-read \ Length of the message
+  \ ." MSG LEN:" dup . cr
   \ ." reading data" cr
+  \ h.s
   dup 0<> if
-    2r@ swap mcan-xb-buf swap \ nlen mcp-addr n
+    2r@ swap mcan-xb-buf 1+ swap \ nlen mcp-addr n
+    \ ." =====" cr
+    \ h.s
     mcp-nread
     \ d0...d7 nlen
   then
+  \ h.s
   \ ." Reading canid" cr
   4 2r> swap mcan-xb-id swap mcp-nread
   drop \ length of 4
   \ ." Unpacking canid" cr
   mcan-get-id$
   \ ." Reading done" cr
-  .s
+  \ .s
+;
+
+: mcan-clear-rxb ( nrxb n -- ) \ Make nrxb-th buf free for receiving
+  >r
+  1+ \ mask = nrxb+1
+  0 swap %00101100 r>
+  \ ." clearing" cr
+  \ h.s
+  mcp-mod
 ;
 
 : mcan-message. ( d0...d7 ndlen canid flag -- )
   if
-    ." EXT ID"
+    ." EXT "
   then
-  ." Message:" . cr
-  dup 0= if drop ." No data" cr
+  ." Message ID:" ch. space
+  dup 0= if drop ." (no data)"
          else
            0 do ch. space loop
-           ." (in the reverse order)" cr
+           ." (in the reverse order)"
          then
+  cr
 ;
 
 \ ----------- application words, subject to move to a new 40-...fs file
@@ -445,60 +472,91 @@ $e0 constant MCP-CANSTAT-OPMOD
 0 constant CAN0
 1 constant CAN1
 
-: a-receive-message ( canid -- ) \ Receive and print
+: a-receive-message ( n -- ) \ Receive and print
+  \ h.s
   dup mcan-nrxb
+  \ h.s
   dup 0= if
     ." No message yet." cr
     drop \ len
     drop \ bufs
-    drop \ canid
+    drop \ n
     exit
   then
   ." A Message! " cr
+  \ h.s
+  \ ." No of full buffers:" dup . cr
   0 do \ canid rxbufs
-    dup i 4 * rshift $0F and \ canid rxbufs nrxb
+    \ ." Iteration: " i . cr
+    \ ." bfsno: " dup ch. cr
+    dup i 4 * rshift $0F and \ n rxbufs nrxb
+    \ h.s
+    \ ." Consider buffer: " dup . cr
     2 pick
-    mcan-load-message
+    \ h.s
+    2dup mcan-load-message
+    ." received msg" cr
+    h.s
     mcan-message.
+    \ h.s
+    mcan-clear-rxb
+    \ h.s
   loop
   drop \ rxbufs
-  drop \ canid
+  drop \ n
 ;
 
-: a-send-test-message ( canid -- ) \ Send a test message
-  CAN0 mcan-find-ntxb
+: a-send-test-message ( canid -- ) \ Send a test message as CAN ID canid
+  \ h.s
+  CAN0 mcan-find-ntxb \ canid ntxb flag
+  \ h.s
   if
-    >r \ R: ntxb
+    >r \ canid  R: ntxb
 
-    ." Found buffer "
-    r@ . cr
+    ." Found buffer:" r@ . cr
 
-    8 0 do i loop 8 \ The message
-    8 true \ Extended ID
-    r>
+    \ 8 0 do dup i + dup ch. space loop 8 \ The message
+    h.s
+    8 0 do i $f0 or dup ch. space loop 8 \ The message
+    dup ch. space cr
+    swap \ ... 8 canid
+    true \ Extended ID
+    r> \ ntxb
+    ." Sending message!" cr
+    h.s
     CAN0 mcan-tx-message
-    CAN0 mcan-tx-failed? if
-      ." MCAN TX FAILED!"
-    else
+    if
       ." MCAN TX SUCCESS!"
+    else
+      ." MCAN TX FAILED!"
     then
     cr
   else
-    drop \ We have not found a free buffer
+    rdrop \ We have not found a free buffer
+    drop  \ dummy zero
+    ." MCAN TX Failed: No free buffer " cr
   then
 ;
 
 compiletoram
 
 : ttt
+  \ h.s
   a-init
   mcan-delay
+  \ h.s
   CAN1 a-receive-message
+  \ h.s
+  ." SENDING " cr
   3 0 do
     i 10 +
     ." Try send " dup hex. ." CANID message" cr
+    \ h.s
     a-send-test-message
+    \ ." LOOK at stack " cr
+    \ h.s
     10 0 do
+      \ ." RECEIVING it:" i . cr
       CAN1 a-receive-message
       mcan-delay
     loop

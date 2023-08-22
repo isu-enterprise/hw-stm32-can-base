@@ -225,7 +225,7 @@ compiletoflash
   r> mcp-stop
 ;
 
-: mcp-mod ( data mask mcp-add n -- ) \ Modify according to mask and data
+: mcp-mod ( data mask mcp-addr n -- ) \ Modify according to mask and data
   >r
   r@ mcp-start
   %00000101 >mcp> drop
