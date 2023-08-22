@@ -126,7 +126,7 @@ $e0 constant MCP-CANSTAT-OPMOD
     MCP-CANSTAT r@ mcp-read
     MCP-CANSTAT-OPMOD and
     over
-    2dup ch. space ch. cr
+    \ 2dup ch. space ch. cr
     =
   until
   drop rdrop
@@ -173,14 +173,13 @@ $e0 constant MCP-CANSTAT-OPMOD
   mcp-nwrite
 ;
 
-: mcan-prep-id$ ( nid flag -- ndh-dl-e8-e0 )
+: mcan-prep-id$ ( nid flag -- nidh-nidl-neid8-neid0 )
   swap $ffff and swap \ Trim leading 1s in id.
   if \ ext
     >r
     r@ $ff and
-    r@ 8 rshift
+    r@ 8 rshift $ff and
     r> 16 rshift >r
-
     r@ $03 and
     r@ $1c and 3 lshift + TXB-EXIDE-MASK or
     r> 5 rshift
@@ -188,9 +187,12 @@ $e0 constant MCP-CANSTAT-OPMOD
     >r
     0 0
     r@ $07 and 5 lshift
-    r> 5 rshift
+    r> 3 rshift
   then
+  \ neid0 neid8 nidl nidh
+  \ h.s
   3 0 do 8 lshift or loop
+  \ ." prep-id:" dup hex. cr
 ;
 
 : mcan-rxf-addr ( n -- addr )
@@ -400,6 +402,9 @@ false constant MCAN-ERR
 
 
 : mcan-get-id$ ( nidh nidl neid8 neid0 -- nid flag ) \ Unpack id
+  \ 0
+  \ 4 0 do i 1+ pick i 8 * lshift or loop
+  \ ." get-id:" hex. cr
   2>r
   swap \ nidl nidh
   3 lshift over 5 rshift + \ nidl id.part
@@ -464,8 +469,9 @@ false constant MCAN-ERR
   ." Message ID:" ch. space
   dup 0= if drop ." (no data)"
          else
-           0 do ch. space loop
-           ." (in the reverse order)"
+           dup 0 do dup i - pick ch. space loop
+           0 do drop loop \ Clean msg
+           \ ." (in the reverse order?)"
          then
   cr
 ;
@@ -478,7 +484,6 @@ false constant MCAN-ERR
   loop
   2 0 do
     i mcan-init
-    leave
     i mcan-500KBps
     i mcan-mode-normal
   loop
@@ -535,8 +540,8 @@ false constant MCAN-ERR
     >r \ canid  R: ntxb
     \ ." Found buffer:" r@ . cr
     8 0 do
-      dup 4 lshift i or $ff and
-      dup ch. space
+      dup 4 lshift 7 i - or $ff and
+      \ dup ch. space
       swap \ shift canid
     loop
     \ 8 0 do i $f0 or
@@ -545,7 +550,7 @@ false constant MCAN-ERR
     \     loop
 
     8 \ The message length
-    dup ch. space cr
+    \ dup ch. space cr
     swap \ ... 8 canid
 
     r> \ ntxb
@@ -553,7 +558,6 @@ false constant MCAN-ERR
     swap
 
     ." Sending message!" cr
-    h.s
     CAN0 mcan-tx-message
     if
       ." MCAN TX SUCCESS!"
@@ -587,7 +591,6 @@ compiletoram
     dup
     ." Try send " dup ch. space ." CANID message" cr
     false a-send-test-message
-    1+
     ." Try send " dup ch. space ." CANID message" cr
     true a-send-test-message
     10 0 do
