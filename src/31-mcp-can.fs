@@ -122,9 +122,12 @@ $e0 constant MCP-CANSTAT-OPMOD
   \ nmode
   begin
     mcan-delay
+    \ ." ."
     MCP-CANSTAT r@ mcp-read
     MCP-CANSTAT-OPMOD and
-    over =
+    over
+    2dup ch. space ch. cr
+    =
   until
   drop rdrop
 ;
@@ -391,10 +394,30 @@ $e0 constant MCP-CANSTAT-OPMOD
   $10 2
 ;
 
+false constant MCAN-RTR
+false constant MCAN-EFF
+false constant MCAN-ERR
+
 
 : mcan-get-id$ ( nidh nidl neid8 neid0 -- nid flag ) \ Unpack id
-  2drop 2drop \ Strut
-  $FF true
+  2>r
+  swap \ nidl nidh
+  3 lshift over 5 rshift + \ nidl id.part
+  over TXB-EXIDE-MASK and
+  0<> if \ Extended
+    2 lshift over $03 and +
+    nip \ id.part
+    2r> swap \ id.part neid0 nedi8
+    rot
+    8 lshift +
+    8 lshift +
+    true
+  else
+    nip \ remove nidl
+    2rdrop \ remove neid8 and neid0
+    false
+  then
+  dup MCAN-EFF !
 ;
 
 : mcan-load-message ( nrxb n -- d0...d7 ndlen canid flag )
@@ -455,6 +478,7 @@ $e0 constant MCP-CANSTAT-OPMOD
   loop
   2 0 do
     i mcan-init
+    leave
     i mcan-500KBps
     i mcan-mode-normal
   loop
@@ -504,15 +528,12 @@ $e0 constant MCP-CANSTAT-OPMOD
   drop \ n
 ;
 
-: a-send-test-message ( canid -- ) \ Send a test message as CAN ID canid
-
+: a-send-test-message ( canid flag -- ) \ Send a test message as CAN ID canid
+  >r \ canid R: flag
   CAN0 mcan-find-ntxb \ canid ntxb flag
-
   if
     >r \ canid  R: ntxb
-
-    ." Found buffer:" r@ . cr
-
+    \ ." Found buffer:" r@ . cr
     8 0 do
       dup 4 lshift i or $ff and
       dup ch. space
@@ -527,9 +548,12 @@ $e0 constant MCP-CANSTAT-OPMOD
     dup ch. space cr
     swap \ ... 8 canid
 
-    true \ Extended ID
     r> \ ntxb
-    \ ." Sending message!" cr
+    r> \ Extended ID flag
+    swap
+
+    ." Sending message!" cr
+    h.s
     CAN0 mcan-tx-message
     if
       ." MCAN TX SUCCESS!"
@@ -538,8 +562,10 @@ $e0 constant MCP-CANSTAT-OPMOD
     then
     cr
   else
-    rdrop \ We have not found a free buffer
+    \ We have not found a free buffer
     drop  \ dummy zero
+    drop \ canid
+    rdrop \ flag
     ." MCAN TX Failed: No free buffer " cr
   then
 ;
@@ -551,17 +577,19 @@ compiletoram
   a-init
   mcan-delay
 
+  ." Receiving previous messages " cr
+
   CAN1 a-receive-message
 
   ." SENDING messages " cr
   3 0 do
-    i 2 lshift
+    i 5 + 2 lshift
     dup
     ." Try send " dup ch. space ." CANID message" cr
-    a-send-test-message
+    false a-send-test-message
     1+
     ." Try send " dup ch. space ." CANID message" cr
-    a-send-test-message
+    true a-send-test-message
     10 0 do
       \ ." RECEIVING it:" i . cr
       CAN1 a-receive-message
@@ -569,3 +597,5 @@ compiletoram
     loop
   loop
 ;
+
+\ ttt
