@@ -86,7 +86,7 @@ $40020800 constant GPIOC
   \ n = %00 - low,
   \     %01 - medium,
   \     %10 - high,
-  \     %01 - very high,
+  \     %11 - very high,
   1 lshift
   >r
   GPIO.OSPEEDR
