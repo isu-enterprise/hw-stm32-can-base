@@ -6,81 +6,66 @@ compiletoram
 
 \ ---------- Forgotten routines of mcp-2515 -----
 
-8000000 constant MCP-CLOCK
+\ 212 page
+$40013C00 \ EXTI base address
 
-: mcp-nwrite ( vn-1 ... v0 nlen mcp-addr n -- ) \ Writes in registers
-  >r
-  r@ mcp-start
-  %00000010 >mcp> drop
-  >mcp> drop \ write mcp-addr
-  0 ?do >mcp> drop loop
-  r> mcp-stop
-;
+dup $00 + constant EXTI-IMR
+dup $04 + constant EXTI-EMR
+dup $08 + constant EXTI-RTSR
+dup $0c + constant EXTI-FTSR
+dup $10 + constant EXTI-SWIER
+dup $14 + constant EXTI-PR
+drop
 
+0 constant CAN0
+1 constant CAN1
 
-: mcp-nread ( nlen mcp-addr n -- dm...d0 nlen )
-  rot
-  dup 0= if
-    drop 2drop 0
-    exit
+: int-vector-init ( flag-rising-edge n -- ) \ n-th vector and rising edge (flag)
+  1 swap lshift >r \ mask
+  r@ EXTI-IMR bis! \ clear mask (0=masked, 1=not masked)
+  r@ EXTI-EMR bis! \ clear event mask
+  if \ Rising triggering
+    r@ EXTI-RTSR bis!
+    r@ EXTI-FTSR bic!
+  else
+    r@ EXTI-RTSR bic!
+    r@ EXTI-FTSR bis!
   then
-  \ mcp-addr n nlen
-  >r \ Save the length
-  >r \ Save n
-  \ mcp-addr
-  r@ mcp-start
-  %00000011 >mcp> drop \ Read cmd
-  >mcp> drop \ Set addr
-  2r@ drop \ nlen
-  0 do 0 >mcp> loop
-  r@ mcp-stop
-  2r> drop \ Set length in the stack
+  \ EXTI-SWIER \ Ignoring the software interrupt engine
+  \ EXTI-PR \ ... and it as well
+  rdrop
 ;
 
-: mcp-reset ( n -- )
-  dup mcp-start
-  %11000000 >mcp> drop
-  mcp-stop
+: EXTI.
+  ." EXTI-IMR (int enable 1=enable, 0=masked)"
+  EXTI-IMR 1b.
+  ." EXTI-EMR (event enable 1=enable, 0=masked)"
+  EXTI-EMR 1b.
+  ." EXTI-RTSR (raising edge)"
+  EXTI-RTSR 1b.
+  ." EXTI-FTSR (falling edge)"
+  EXTI-FTSR 1b.
+  ." EXTI-SWIER (soft int)"
+  EXTI-SWIER 1b.
+  ." EXTI-PR (pending)"
+  EXTI-PR 1b.
 ;
 
-: MCP.TXB ( n -- mcp-addr ) \ Converts TXn to TXBn_CTRL mcp-addr
-  %0011 + 4 lshift inline
+: int-vector-done ( n -- ) \ n-th vector disable events & ints
+  1 swap lshift >r
+  r@ EXTI-IMR bic!
+  r@ EXTI-EMR bic!
+  rdrop
 ;
 
-: MCP.RXB ( n -- mcp-addr ) \ Converts TXn to TXBn_CTRL mcp-addr
-  %0110 + 4 lshift inline
+
+: int-vector-clear! ( n -- ) \ Writing 1 in n-th bit clears its int event
+  1 swap lshift EXTI-PR bis!
 ;
 
-: MCP.BSIDH ( mcp-addr -- mcp-addr )
-  1 + inline
+: int-vector? ( n -- flag ) \ Check n-th vector int pending
+  1 swap lshift EXTI-PR bit@
 ;
-
-: MCP.BSIDL ( mcp-addr -- mcp-addr )
-  2 + inline
-;
-
-: MCP.BEID8 ( mcp-addr -- mcp-addr )
-  3 + inline
-;
-
-: MCP.BEID0 ( mcp-addr -- mcp-addr )
-  4 + inline
-;
-
-: MCP.DLC ( mcp-addr -- mcp-addr )
-  5 + inline
-;
-
-: MCP.D ( n mcp-addr -- mcp-addr ) \ n-th byte of data
-  6 + +
-  inline
-;
-
-$08 constant TXB-EXIDE-MASK
-$2b constant MCP-CANINTE
-$2c constant MCP-CANINTF
-$0e constant MCP-CANSTAT
-$e0 constant MCP-CANSTAT-OPMOD
 
 \ 8 mhz clock
 \ 00 80 80  (1mbps)
@@ -92,21 +77,6 @@ $e0 constant MCP-CANSTAT-OPMOD
 
 \ ---------- Adapter application subroutines for mcp-2515 can -------
 \ https://github.com/autowp/arduino-mcp2515 - Helping sources
-
-: copies$ ( nval n -- nval ... nval n ) \ Fill stack with n values and its length
-  >r
-  r@
-  dup 0 >
-  if
-    1-
-    0 do dup loop
-    r>
-  else
-    drop \ n
-    drop \ val
-    0 rdrop
-  then
-;
 
 : mcan-delay
   1000 0 do loop
@@ -131,6 +101,8 @@ $e0 constant MCP-CANSTAT-OPMOD
   until
   drop rdrop
 ;
+
+0 variable MCAN-INT-HANDLER \ Addr of word of ( n -- ) signature
 
 : mcan-nbt! ( ncf1 ncf2 ncf3 n -- ) \ Set Nominal Bit Time
   3 swap
@@ -161,6 +133,81 @@ $e0 constant MCP-CANSTAT-OPMOD
 
 : mcan-mode-normal ( n -- ) \ Ensure mcan in the normal mode
   $00 swap mcan-mode
+;
+
+false variable (mcan-check)
+
+: (mcan-exti-8-handler)
+  true (mcan-check) !
+  1
+  MCAN-INT-HANDLER @
+  dup
+  0<> if
+    execute
+  else 2drop then
+  MCP-INT-1 nip int-vector-clear!
+;
+
+$40013800
+dup $10 + constant SYSCFG-EXTICR3
+drop
+
+$E000E100 constant NVIC-ISER0
+
+\ https://stm32f4-discovery.net/2014/08/stm32f4-external-interrupts-tutorial/
+
+: mcan-int-init ( addr n -- )
+  \ GPIO setup
+  >r
+  dup 0= if
+    ." No handler ( n -- ) defined!" cr
+    drop
+  else
+    MCAN-INT-HANDLER !
+  then
+
+  ['] (mcan-exti-8-handler) irq-exti9_5 !
+
+  %00 MCP-INT-1 gpio-pin-moder!   \ Input
+  %01 MCP-INT-1 gpio-pin-pupdr!   \ Pull Up ----\____
+
+  \ Add clocking to configuration
+  1 14 lshift RCC RCC.APB2ENR bis!
+  \ Connect B8 to EXTI8
+  SYSCFG-EXTICR3
+      %1111 over bic!
+      %0001 swap bis!
+
+  MCP-INT-1 nip
+  dup int-vector-clear!
+  false swap int-vector-init \ Setup 12-th EXTI as PA12 ---\___
+
+  \ Now init mcp2515
+  r@ mcan-mode-config
+  %11 dup $2b r@ mcp-mod \ Set interrupt when received msg
+  r> mcan-mode-normal
+  1 23 lshift NVIC-ISER0 bis!
+;
+
+: mcan-int-done ( -- )
+  1 23 lshift NVIC-ISER0 bic!
+  MCP-INT-1 nip int-vector-done
+  0 MCAN-INT-HANDLER !
+;
+
+: copies$ ( nval n -- nval ... nval n ) \ Fill stack with n values and its length
+  >r
+  r@
+  dup 0 >
+  if
+    1-
+    0 do dup loop
+    r>
+  else
+    drop \ n
+    drop \ val
+    0 rdrop
+  then
 ;
 
 : mcan-id! ( ndh-dl-e8-e0 fm-addr n -- ) \ Set filter/mask-addr 4 bytes
@@ -466,7 +513,7 @@ false constant MCAN-ERR
   if
     ." EXT "
   then
-  ." Message ID:" ch. space
+  ." Message ID:" ." $" hex. space
   dup 0= if drop ." (no data)"
          else
            dup 0 do dup i - pick ch. space loop
@@ -475,6 +522,7 @@ false constant MCAN-ERR
          then
   cr
 ;
+
 
 \ ----------- application words, subject to move to a new 40-...fs file
 
@@ -497,9 +545,6 @@ false constant MCAN-ERR
     i mcp-done
   loop
 ;
-
-0 constant CAN0
-1 constant CAN1
 
 : a-receive-message ( n -- ) \ Receive and print
 
@@ -558,12 +603,15 @@ false constant MCAN-ERR
     swap
 
     ." Sending message!" cr
+    dint
     CAN0 mcan-tx-message
     if
       ." MCAN TX SUCCESS!"
     else
       ." MCAN TX FAILED!"
     then
+    cr
+    eint
     cr
   else
     \ We have not found a free buffer
@@ -612,7 +660,36 @@ compiletoram
     ." At least 2 tests needed!" cr
   then
   1-
+  ttt
   0 do
     mcan-sr-test
   loop
+;
+
+: mcan-int-handler-impl ( n -- )
+  dint
+  ." INT:" cr
+  a-receive-message
+  eint
+;
+
+
+: iii-init
+  a-init
+  mcan-delay
+  CAN1 a-receive-message
+  false (mcan-check) ! \ Wether an event triggered or not
+  ['] mcan-int-handler-impl CAN1 mcan-int-init
+;
+
+: iii \ Interrupt driven demo
+  iii-init
+  $20 false a-send-test-message
+  mcan-delay
+  $FF00 true a-send-test-message
+  \ mcan-int-done
+;
+
+: si
+  (mcan-exti-8-handler)
 ;
