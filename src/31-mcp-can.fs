@@ -504,8 +504,6 @@ false constant MCAN-ERR
   >r
   1+ \ mask = nrxb+1
   0 swap %00101100 r>
-  \ ." clearing" cr
-
   mcp-mod
 ;
 
