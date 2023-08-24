@@ -5,11 +5,12 @@ compiletoflash
 
 : MCP-NSS-0 GPIOA 15 inline ;
 : MCP-NSS-1 GPIOA 11 inline ;
+: MCP-INT-0 GPIOA 12 inline ;
+: MCP-INT-1 GPIOB 8 inline ;
 : MCP-SPI GPIOB inline ;
 : MCP-MOSI MCP-SPI 5 inline ;
 : MCP-MISO MCP-SPI 4 inline ;
 : MCP-SCK MCP-SPI 3 inline ;
-: MCP-INT GPIOA 12 inline ;
 
 : RCC.APB2ENR.
   RCC RCC.APB2ENR 1b.
@@ -234,6 +235,83 @@ compiletoflash
   >mcp> drop
   r> mcp-stop
 ;
+
+
+8000000 constant MCP-CLOCK
+
+: mcp-nwrite ( vn-1 ... v0 nlen mcp-addr n -- ) \ Writes in registers
+  >r
+  r@ mcp-start
+  %00000010 >mcp> drop
+  >mcp> drop \ write mcp-addr
+  0 ?do >mcp> drop loop
+  r> mcp-stop
+;
+
+
+: mcp-nread ( nlen mcp-addr n -- dm...d0 nlen )
+  rot
+  dup 0= if
+    drop 2drop 0
+    exit
+  then
+  \ mcp-addr n nlen
+  >r \ Save the length
+  >r \ Save n
+  \ mcp-addr
+  r@ mcp-start
+  %00000011 >mcp> drop \ Read cmd
+  >mcp> drop \ Set addr
+  2r@ drop \ nlen
+  0 do 0 >mcp> loop
+  r@ mcp-stop
+  2r> drop \ Set length in the stack
+;
+
+: mcp-reset ( n -- )
+  dup mcp-start
+  %11000000 >mcp> drop
+  mcp-stop
+;
+
+: MCP.TXB ( n -- mcp-addr ) \ Converts TXn to TXBn_CTRL mcp-addr
+  %0011 + 4 lshift inline
+;
+
+: MCP.RXB ( n -- mcp-addr ) \ Converts TXn to TXBn_CTRL mcp-addr
+  %0110 + 4 lshift inline
+;
+
+: MCP.BSIDH ( mcp-addr -- mcp-addr )
+  1 + inline
+;
+
+: MCP.BSIDL ( mcp-addr -- mcp-addr )
+  2 + inline
+;
+
+: MCP.BEID8 ( mcp-addr -- mcp-addr )
+  3 + inline
+;
+
+: MCP.BEID0 ( mcp-addr -- mcp-addr )
+  4 + inline
+;
+
+: MCP.DLC ( mcp-addr -- mcp-addr )
+  5 + inline
+;
+
+: MCP.D ( n mcp-addr -- mcp-addr ) \ n-th byte of data
+  6 + +
+  inline
+;
+
+$08 constant TXB-EXIDE-MASK
+$2b constant MCP-CANINTE
+$2c constant MCP-CANINTF
+$0e constant MCP-CANSTAT
+$e0 constant MCP-CANSTAT-OPMOD
 
 
 : mcp-test ( n -- ) \ n - mcp No = 0,1
