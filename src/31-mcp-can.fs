@@ -2,6 +2,7 @@
 
 forgetram
 compiletoram
+\ compiletoflash
 
 
 \ ---------- Forgotten routines of mcp-2515 -----
@@ -521,6 +522,40 @@ false constant MCAN-ERR
   cr
 ;
 
+: hh. ( n -- )
+  dup $ffff >
+  if ." not a 16 bit word $" hex.
+  else
+    0
+    base @
+    -rot
+    hex
+    <# # # # # #>
+    type
+    base !
+  then
+;
+
+: mcan-message-snif. ( d0...d7 ndlen canid flag -- )
+  ." ("
+  if
+    ." ext,"
+  else
+    ." norm,"
+  then
+  hh. ." ,("
+  dup 0= if drop ." no-data"
+         else
+           dup 0 do
+             i 0<> if ." ," then
+             dup i - pick ch.
+           loop
+           0 do drop loop \ Clean msg
+           \ ." (in the reverse order?)"
+         then
+  ." ))" cr
+;
+
 
 \ ----------- application words, subject to move to a new 40-...fs file
 
@@ -576,6 +611,40 @@ false constant MCAN-ERR
   drop \ n
 ;
 
+
+: a-receive-message-snif ( n -- ) \ Receive and sniffer print
+
+  dup mcan-nrxb
+
+  dup 0= if
+    \ ." No message yet." cr
+    drop \ len
+    drop \ bufs
+    drop \ n
+    exit
+  then
+  \ ." A Message! " cr
+
+  \ ." No of full buffers:" dup . cr
+  0 do \ canid rxbufs
+    \ ." Iteration: " i . cr
+    \ ." bfsno: " dup ch. cr
+    dup i 4 * rshift $0F and \ n rxbufs nrxb
+
+    \ ." Consider buffer: " dup . cr
+    2 pick
+
+    2dup mcan-load-message
+    mcan-message-snif.
+
+    mcan-clear-rxb
+
+  loop
+  drop \ rxbufs
+  drop \ n
+;
+
+
 : a-send-test-message ( canid flag -- ) \ Send a test message as CAN ID canid
   >r \ canid R: flag
   CAN0 mcan-find-ntxb \ canid ntxb flag
@@ -620,7 +689,7 @@ false constant MCAN-ERR
   then
 ;
 
-compiletoram
+\ compiletoram
 
 
 : mcan-sr-test
@@ -671,6 +740,11 @@ compiletoram
   eint
 ;
 
+: mcan-int-handler-snif-impl ( n -- )
+  dint
+  a-receive-message-snif
+  eint
+;
 
 : iii-init
   a-init
@@ -688,6 +762,25 @@ compiletoram
   \ mcan-int-done
 ;
 
-: si
+: iii-init-snif
+  a-init
+  mcan-delay
+  false (mcan-check) ! \ Wether an event triggered or not
+  ['] mcan-int-handler-snif-impl CAN1 mcan-int-init
+;
+
+: snif \ Sniffer
+  iii-init-snif
+  $20 false a-send-test-message
+  mcan-delay
+  $FF00 true a-send-test-message
+  begin
+    key?
+  until
+;
+
+: (si)
   (mcan-exti-8-handler)
 ;
+
+compiletoram
