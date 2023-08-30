@@ -553,7 +553,7 @@ false constant MCAN-ERR
            0 do drop loop \ Clean msg
            \ ." (in the reverse order?)"
          then
-  ." ))" cr
+  ." ))"
 ;
 
 
@@ -636,8 +636,9 @@ false constant MCAN-ERR
 
     2dup mcan-load-message
     mcan-message-snif.
-
+    dup . cr
     mcan-clear-rxb
+
 
   loop
   drop \ rxbufs
