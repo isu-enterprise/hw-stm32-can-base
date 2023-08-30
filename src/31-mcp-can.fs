@@ -770,12 +770,27 @@ false constant MCAN-ERR
   ['] mcan-int-handler-snif-impl CAN1 mcan-int-init
 ;
 
-: snif \ Sniffer
-  iii-init-snif
+: shif-test-msg
   $20 false a-send-test-message
   mcan-delay
   $FF00 true a-send-test-message
+;
+
+: snif \ A Event sniffer
+  iii-init-snif
+  \ snif-test-msg
   begin
+    key?
+  until
+;
+
+: snif-poll \ A Polling sniffer
+  a-init
+  mcan-delay
+  \ snif-test-msg
+  begin
+    CAN0 a-receive-message-snif
+    CAN1 a-receive-message-snif
     key?
   until
 ;
